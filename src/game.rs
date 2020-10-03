@@ -1,27 +1,33 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use ggez::event::EventHandler;
-use ggez::graphics;
+use ggez::graphics::{self, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
 
-use crate::scenes::gamestart::GameStartScene;
+use crate::scenes::{gamestart::GameStartScene, mainscene::MainScene};
 use crate::scenes::Scene;
+use crate::player::Player;
 
 pub struct Game {
     current_scene: Box<dyn Scene>,
     state: GameState,
+    player: Rc<RefCell<Player>>,
+    font: Font,
 }
 
-enum GameState {
+pub enum GameState {
     GameStart,
     MainState,
 }
 
 impl GameState {
-    fn get_scene(&self, ctx: &mut Context) -> Box<dyn Scene> {
+    fn get_scene(&self, ctx: &mut Context, font: Font, player: Rc<RefCell<Player>>) -> Box<dyn Scene> {
         match self {
-            GameState::GameStart => GameStartScene::new_boxed(ctx),
-            GameState::MainState => GameStartScene::new_boxed(ctx),
+            GameState::GameStart => GameStartScene::new_boxed(ctx, font, player),
+            GameState::MainState => MainScene::new_boxed(ctx, font, player),
         }
     }
 
@@ -35,9 +41,13 @@ impl GameState {
 
 impl Game {
     pub fn new(ctx: &mut Context) -> Game {
-        let mut game = Game {
-            current_scene: GameStartScene::new_boxed(ctx),
+        let font = Font::new(ctx, "/ClearSans-Regular.ttf").unwrap();
+        let player = Rc::new(RefCell::new(Player::new(ctx, graphics::WHITE).unwrap()));
+        let game = Game {
+            current_scene: GameStartScene::new_boxed(ctx, font, player.clone()),
             state: GameState::GameStart,
+            player,
+            font,
         };
 
         game
@@ -49,13 +59,13 @@ impl EventHandler for Game {
         self.current_scene.update(ctx)?;
         if self.current_scene.finished() {
             self.state = self.state.get_next_state();
-            self.current_scene = self.state.get_scene(ctx);
+            self.current_scene = self.state.get_scene(ctx, self.font, self.player.clone());
         }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx, graphics::WHITE);
+        graphics::clear(ctx, graphics::BLACK);
 
         self.current_scene.draw(ctx)?;
 

@@ -15,13 +15,13 @@ pub struct Player {
     pub x: f32,
     pub y: f32,
     state: PlayerState,
-    color: Color,
+    pub color: Color,
 }
 
 impl Player {
     pub fn new(ctx: &mut Context, color: Color) -> GameResult<Self> {
         Ok(Self {
-            sprite: Image::new(ctx, "res/player_sprite.png")?,
+            sprite: Image::new(ctx, "/player_sprite.png")?,
             x: 0f32,
             y: 0f32,
             state: PlayerState::Standing,

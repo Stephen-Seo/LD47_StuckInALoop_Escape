@@ -1,4 +1,5 @@
 pub mod gamestart;
+pub mod mainscene;
 
 use ggez::event::EventHandler;
 
