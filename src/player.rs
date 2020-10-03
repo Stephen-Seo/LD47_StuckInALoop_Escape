@@ -5,6 +5,7 @@ use ggez::{Context, GameResult};
 
 const WALK_TIME: f32 = 0.34f32;
 
+#[derive(PartialEq)]
 pub enum PlayerState {
     Standing,
     Walking(bool, f32),
@@ -35,9 +36,11 @@ impl Player {
 
     pub fn set_walking(&mut self, is_walking: bool) {
         if is_walking {
-            self.state = PlayerState::Standing;
+            if self.state == PlayerState::Standing {
+                self.state = PlayerState::Walking(true, 0f32);
+            }
         } else {
-            self.state = PlayerState::Walking(true, 0f32);
+            self.state = PlayerState::Standing;
         }
     }
 
@@ -49,12 +52,13 @@ impl Player {
         let dt = delta(ctx);
         match &mut self.state {
             PlayerState::Standing => (),
-            PlayerState::Walking(left, timer) => {
+            PlayerState::Walking(ref mut left, ref mut timer) => {
                 *timer += dt.as_secs_f32();
                 if *timer >= WALK_TIME {
                     *timer -= WALK_TIME;
                     *left = !*left;
                 }
+                //println!("{}", timer);
             }
         }
         Ok(())
@@ -87,8 +91,9 @@ impl Player {
                     )?;
                 }
             }
-            PlayerState::Walking(left, _) => {
-                if *left {
+            PlayerState::Walking(step, _) => {
+                if *step {
+                    //print!("step 0, ");
                     if self.xflip {
                         graphics::draw(
                             ctx,
@@ -106,6 +111,7 @@ impl Player {
                                 .scale([-1f32, 1f32])
                                 .offset([1f32, 0f32]),
                         )?;
+                    //println!("left");
                     } else {
                         graphics::draw(
                             ctx,
@@ -121,8 +127,10 @@ impl Player {
                                 .rotation(self.rot)
                                 .color(self.color),
                         )?;
+                        //println!("right");
                     }
                 } else {
+                    //print!("step 1, ");
                     if self.xflip {
                         graphics::draw(
                             ctx,
@@ -140,6 +148,7 @@ impl Player {
                                 .scale([-1f32, 1f32])
                                 .offset([1f32, 0f32]),
                         )?;
+                    //println!("left");
                     } else {
                         graphics::draw(
                             ctx,
@@ -155,6 +164,7 @@ impl Player {
                                 .rotation(self.rot)
                                 .color(self.color),
                         )?;
+                        //println!("right");
                     }
                 }
             }

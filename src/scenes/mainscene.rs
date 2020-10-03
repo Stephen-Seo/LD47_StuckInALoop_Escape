@@ -19,6 +19,7 @@ const TEXT_RATE: f32 = 0.3f32;
 const TEXT_FAST_RATE: f32 = 0.1f32;
 const IN_POD_TEXT_WAIT_TIME: f32 = 1f32;
 const GET_OUT_OF_POD_TIME: f32 = 3f32;
+const PLAYER_MOVEMENT_SPEED: f32 = 200f32;
 
 enum State {
     InPod_InDarkness,
@@ -29,6 +30,12 @@ enum State {
 
 enum Room {
     StasisPod,
+}
+
+enum WalkingState {
+    Standing,
+    Left,
+    Right,
 }
 
 pub struct MainScene {
@@ -49,6 +56,7 @@ pub struct MainScene {
     draw_flicker_pod: bool,
     index: usize,
     room: Room,
+    walking_state: WalkingState,
 }
 
 impl MainScene {
@@ -76,6 +84,7 @@ impl MainScene {
             draw_flicker_pod: false,
             index: 0usize,
             room: Room::StasisPod,
+            walking_state: WalkingState::Standing,
         }
     }
 
@@ -141,7 +150,34 @@ impl EventHandler for MainScene {
                 }
             }
             State::Investigate => {
-                // TODO
+                let mut player = self.player.borrow_mut();
+                match self.walking_state {
+                    WalkingState::Standing => {
+                        player.set_walking(false);
+                    }
+                    WalkingState::Left => {
+                        player.x -= dt * PLAYER_MOVEMENT_SPEED;
+                        if player.x <= 0f32 {
+                            player.x = 0f32;
+                            self.walking_state = WalkingState::Standing;
+                            player.set_walking(false);
+                        } else {
+                            player.set_walking(true);
+                            player.set_xflip(true);
+                        }
+                    }
+                    WalkingState::Right => {
+                        player.x += dt * PLAYER_MOVEMENT_SPEED;
+                        if player.x + 64f32 >= 800f32 {
+                            player.x = 800f32 - 64f32;
+                            self.walking_state = WalkingState::Standing;
+                            player.set_walking(false);
+                        } else {
+                            player.set_walking(true);
+                            player.set_xflip(false);
+                        }
+                    }
+                }
             }
         }
         self.player.borrow_mut().update(ctx)?;
@@ -220,13 +256,7 @@ impl EventHandler for MainScene {
         Ok(())
     }
 
-    fn mouse_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        _button: MouseButton,
-        x: f32,
-        y: f32,
-    ) {
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         match self.state {
             State::InPod_InDarkness => (),
             State::InPod_WakeupText => {
@@ -238,14 +268,36 @@ impl EventHandler for MainScene {
                 }
             }
             State::GetOutOfPod => (),
-            State::Investigate => {}
+            State::Investigate => {
+                if button == MouseButton::Left {
+                    let player = self.player.borrow();
+                    if player.x > x {
+                        self.walking_state = WalkingState::Left;
+                    } else if player.x + 64f32 < x {
+                        self.walking_state = WalkingState::Right;
+                    }
+                }
+            }
+        }
+    }
+
+    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        match self.state {
+            State::InPod_InDarkness => (),
+            State::InPod_WakeupText => (),
+            State::GetOutOfPod => (),
+            State::Investigate => {
+                if button == MouseButton::Left {
+                    self.walking_state = WalkingState::Standing;
+                }
+            }
         }
     }
 
     fn key_down_event(
         &mut self,
-        _ctx: &mut Context,
-        _keycode: KeyCode,
+        ctx: &mut Context,
+        keycode: KeyCode,
         _keymods: KeyMods,
         _repeat: bool,
     ) {
@@ -261,7 +313,32 @@ impl EventHandler for MainScene {
                 }
             }
             State::GetOutOfPod => (),
-            State::Investigate => {}
+            State::Investigate => {
+                if keycode == KeyCode::A || keycode == KeyCode::Left {
+                    if self.player.borrow().x > 0f32 {
+                        self.walking_state = WalkingState::Left;
+                    }
+                } else if keycode == KeyCode::D || keycode == KeyCode::Right {
+                    if self.player.borrow().x + 64f32 < 800f32 {
+                        self.walking_state = WalkingState::Right;
+                    }
+                }
+            }
+        }
+    }
+
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymods: KeyMods) {
+        match self.state {
+            State::InPod_InDarkness => (),
+            State::InPod_WakeupText => (),
+            State::GetOutOfPod => (),
+            State::Investigate => {
+                if keycode == KeyCode::A || keycode == KeyCode::Left {
+                    self.walking_state = WalkingState::Standing;
+                } else if keycode == KeyCode::D || keycode == KeyCode::Right {
+                    self.walking_state = WalkingState::Standing;
+                }
+            }
         }
     }
 }

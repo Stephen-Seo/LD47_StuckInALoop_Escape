@@ -82,6 +82,10 @@ impl EventHandler for Game {
             .mouse_button_down_event(ctx, button, x, y);
     }
 
+    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        self.current_scene.mouse_button_up_event(ctx, button, x, y);
+    }
+
     fn key_down_event(
         &mut self,
         ctx: &mut Context,
@@ -91,5 +95,9 @@ impl EventHandler for Game {
     ) {
         self.current_scene
             .key_down_event(ctx, keycode, keymods, repeat);
+    }
+
+    fn key_up_event(&mut self, ctx: &mut Context, keycode: KeyCode, keymods: KeyMods) {
+        self.current_scene.key_up_event(ctx, keycode, keymods);
     }
 }
