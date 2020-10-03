@@ -1,10 +1,12 @@
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use ggez::event::EventHandler;
-use ggez::{Context, GameResult};
-use ggez::graphics::{self, Color, DrawParam, DrawMode, FillOptions, Font, Scale, Text, TextFragment, Mesh, Rect};
+use ggez::graphics::{
+    self, Color, DrawMode, DrawParam, FillOptions, Font, Mesh, Rect, Scale, Text, TextFragment,
+};
 use ggez::input::mouse::MouseButton;
+use ggez::{Context, GameResult};
 
 use super::Scene;
 use crate::player::Player;
@@ -25,7 +27,9 @@ pub struct GameStartScene {
 
 impl GameStartScene {
     pub fn new(_ctx: &mut Context, font: Font, player: Rc<RefCell<Player>>) -> Self {
-        let mut pick_color_text: Text = Text::new(TextFragment::new("Pick your color").color(Color::from_rgb(0xff, 0xff, 0xff)));
+        let mut pick_color_text: Text = Text::new(
+            TextFragment::new("Pick your color").color(Color::from_rgb(0xff, 0xff, 0xff)),
+        );
         pick_color_text.set_font(font, Scale::uniform(32f32));
         Self {
             font,
@@ -54,33 +58,102 @@ impl EventHandler for GameStartScene {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let text_width = self.pick_color_text.width(ctx) as f32 / 2f32;
-        graphics::draw(ctx, &self.pick_color_text, DrawParam::new().dest([400f32 - text_width, 150f32]))?;
+        graphics::draw(
+            ctx,
+            &self.pick_color_text,
+            DrawParam::new().dest([400f32 - text_width, 150f32]),
+        )?;
 
-        let pale_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), Rect::new(0f32, 0f32, 128f32, 128f32), self.color_pale)?;
-        graphics::draw(ctx, &pale_mesh, DrawParam::new().dest([400f32 - 128f32 - 64f32 - 64f32, 200f32]))?;
+        let pale_mesh = Mesh::new_rectangle(
+            ctx,
+            DrawMode::fill(),
+            Rect::new(0f32, 0f32, 128f32, 128f32),
+            self.color_pale,
+        )?;
+        graphics::draw(
+            ctx,
+            &pale_mesh,
+            DrawParam::new().dest([400f32 - 128f32 - 64f32 - 64f32, 200f32]),
+        )?;
 
-        let white_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), Rect::new(0f32, 0f32, 128f32, 128f32), self.color_white)?;
-        graphics::draw(ctx, &white_mesh, DrawParam::new().dest([400f32 - 64f32 - 64f32, 200f32]))?;
+        let white_mesh = Mesh::new_rectangle(
+            ctx,
+            DrawMode::fill(),
+            Rect::new(0f32, 0f32, 128f32, 128f32),
+            self.color_white,
+        )?;
+        graphics::draw(
+            ctx,
+            &white_mesh,
+            DrawParam::new().dest([400f32 - 64f32 - 64f32, 200f32]),
+        )?;
 
-        let brown_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), Rect::new(0f32, 0f32, 128f32, 128f32), self.color_brown)?;
+        let brown_mesh = Mesh::new_rectangle(
+            ctx,
+            DrawMode::fill(),
+            Rect::new(0f32, 0f32, 128f32, 128f32),
+            self.color_brown,
+        )?;
         graphics::draw(ctx, &brown_mesh, DrawParam::new().dest([400f32, 200f32]))?;
 
-        let black_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), Rect::new(0f32, 0f32, 128f32, 128f32), self.color_black)?;
-        graphics::draw(ctx, &black_mesh, DrawParam::new().dest([400f32 + 128f32, 200f32]))?;
+        let black_mesh = Mesh::new_rectangle(
+            ctx,
+            DrawMode::fill(),
+            Rect::new(0f32, 0f32, 128f32, 128f32),
+            self.color_black,
+        )?;
+        graphics::draw(
+            ctx,
+            &black_mesh,
+            DrawParam::new().dest([400f32 + 128f32, 200f32]),
+        )?;
 
-        let red_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), Rect::new(0f32, 0f32, 128f32, 128f32), self.color_red)?;
-        graphics::draw(ctx, &red_mesh, DrawParam::new().dest([400f32 - 128f32 - 64f32, 328f32]))?;
+        let red_mesh = Mesh::new_rectangle(
+            ctx,
+            DrawMode::fill(),
+            Rect::new(0f32, 0f32, 128f32, 128f32),
+            self.color_red,
+        )?;
+        graphics::draw(
+            ctx,
+            &red_mesh,
+            DrawParam::new().dest([400f32 - 128f32 - 64f32, 328f32]),
+        )?;
 
-        let green_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), Rect::new(0f32, 0f32, 128f32, 128f32), self.color_green)?;
-        graphics::draw(ctx, &green_mesh, DrawParam::new().dest([400f32 - 64f32, 328f32]))?;
+        let green_mesh = Mesh::new_rectangle(
+            ctx,
+            DrawMode::fill(),
+            Rect::new(0f32, 0f32, 128f32, 128f32),
+            self.color_green,
+        )?;
+        graphics::draw(
+            ctx,
+            &green_mesh,
+            DrawParam::new().dest([400f32 - 64f32, 328f32]),
+        )?;
 
-        let blue_mesh = Mesh::new_rectangle(ctx, DrawMode::fill(), Rect::new(0f32, 0f32, 128f32, 128f32), self.color_blue)?;
-        graphics::draw(ctx, &blue_mesh, DrawParam::new().dest([400f32 + 128f32 - 64f32, 328f32]))?;
+        let blue_mesh = Mesh::new_rectangle(
+            ctx,
+            DrawMode::fill(),
+            Rect::new(0f32, 0f32, 128f32, 128f32),
+            self.color_blue,
+        )?;
+        graphics::draw(
+            ctx,
+            &blue_mesh,
+            DrawParam::new().dest([400f32 + 128f32 - 64f32, 328f32]),
+        )?;
 
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, _button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: MouseButton,
+        x: f32,
+        y: f32,
+    ) {
         if y > 200f32 && y < 200f32 + 128f32 {
             if x > 400f32 - 256f32 && x < 400f32 - 128f32 {
                 self.player.borrow_mut().color = self.color_pale;

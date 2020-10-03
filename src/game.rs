@@ -1,5 +1,5 @@
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use ggez::event::EventHandler;
 use ggez::graphics::{self, Font};
@@ -7,9 +7,9 @@ use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
 
-use crate::scenes::{gamestart::GameStartScene, mainscene::MainScene};
-use crate::scenes::Scene;
 use crate::player::Player;
+use crate::scenes::Scene;
+use crate::scenes::{gamestart::GameStartScene, mainscene::MainScene};
 
 pub struct Game {
     current_scene: Box<dyn Scene>,
@@ -24,7 +24,12 @@ pub enum GameState {
 }
 
 impl GameState {
-    fn get_scene(&self, ctx: &mut Context, font: Font, player: Rc<RefCell<Player>>) -> Box<dyn Scene> {
+    fn get_scene(
+        &self,
+        ctx: &mut Context,
+        font: Font,
+        player: Rc<RefCell<Player>>,
+    ) -> Box<dyn Scene> {
         match self {
             GameState::GameStart => GameStartScene::new_boxed(ctx, font, player),
             GameState::MainState => MainScene::new_boxed(ctx, font, player),

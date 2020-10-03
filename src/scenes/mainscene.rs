@@ -1,18 +1,21 @@
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
-use ggez::{Context, GameResult};
-use ggez::graphics::{self, Font};
 use ggez::event::EventHandler;
+use ggez::graphics::{self, Font, Text};
 use ggez::input::mouse::MouseButton;
+use ggez::{Context, GameResult};
 
-use crate::player::Player;
 use super::Scene;
+use crate::player::Player;
 
 pub struct MainScene {
     font: Font,
     player: Rc<RefCell<Player>>,
     finished: bool,
+    current_text: Text,
+    final_text: String,
+    text_idx: usize,
 }
 
 impl MainScene {
@@ -21,6 +24,9 @@ impl MainScene {
             font,
             player,
             finished: false,
+            current_text: Text::new("".to_owned()),
+            final_text: String::new(),
+            text_idx: 0usize,
         }
     }
 
@@ -39,7 +45,13 @@ impl EventHandler for MainScene {
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, _button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: MouseButton,
+        x: f32,
+        y: f32,
+    ) {
     }
 }
 
