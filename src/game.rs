@@ -14,21 +14,21 @@ pub struct Game {
 
 enum GameState {
     GameStart,
-    Opening,
+    MainState,
 }
 
 impl GameState {
     fn get_scene(&self, ctx: &mut Context) -> Box<dyn Scene> {
         match self {
             GameState::GameStart => GameStartScene::new_boxed(ctx),
-            GameState::Opening => GameStartScene::new_boxed(ctx),
+            GameState::MainState => GameStartScene::new_boxed(ctx),
         }
     }
 
     fn get_next_state(&self) -> GameState {
         match self {
-            GameState::GameStart => GameState::Opening,
-            GameState::Opening => GameState::GameStart,
+            GameState::GameStart => GameState::MainState,
+            GameState::MainState => GameState::GameStart,
         }
     }
 }
@@ -64,19 +64,21 @@ impl EventHandler for Game {
 
     fn mouse_button_down_event(
         &mut self,
-        _ctx: &mut Context,
-        _button: MouseButton,
-        _x: f32,
-        _y: f32,
+        ctx: &mut Context,
+        button: MouseButton,
+        x: f32,
+        y: f32,
     ) {
+        self.current_scene.mouse_button_down_event(ctx, button, x, y);
     }
 
     fn key_down_event(
         &mut self,
-        _ctx: &mut Context,
-        _keycode: KeyCode,
-        _keymods: KeyMods,
-        _repeat: bool,
+        ctx: &mut Context,
+        keycode: KeyCode,
+        keymods: KeyMods,
+        repeat: bool,
     ) {
+        self.current_scene.key_down_event(ctx, keycode, keymods, repeat);
     }
 }
