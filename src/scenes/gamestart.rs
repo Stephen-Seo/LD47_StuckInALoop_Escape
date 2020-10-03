@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use ggez::event::EventHandler;
 use ggez::graphics::{
-    self, Color, DrawMode, DrawParam, FillOptions, Font, Mesh, Rect, Scale, Text, TextFragment,
+    self, Color, DrawMode, DrawParam, Font, Mesh, Rect, Scale, Text, TextFragment,
 };
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
