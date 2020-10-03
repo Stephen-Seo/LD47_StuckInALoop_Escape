@@ -1,5 +1,7 @@
-use crate::subeventhandler::SubEventHandler;
+use ggez::event::EventHandler;
 use ggez::{Context, GameResult};
+
+use super::Scene;
 
 pub struct GameStartScene {}
 
@@ -13,7 +15,7 @@ impl GameStartScene {
     }
 }
 
-impl SubEventHandler for GameStartScene {
+impl EventHandler for GameStartScene {
     fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         Ok(())
     }
@@ -21,10 +23,10 @@ impl SubEventHandler for GameStartScene {
     fn draw(&mut self, _ctx: &mut Context) -> GameResult<()> {
         Ok(())
     }
+}
 
-    fn next(&mut self) {}
-
-    fn finished(&mut self) -> bool {
+impl Scene for GameStartScene {
+    fn finished(&self) -> bool {
         false
     }
 }

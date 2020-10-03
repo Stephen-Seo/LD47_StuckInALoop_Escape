@@ -1,6 +1,5 @@
 mod game;
 mod scenes;
-mod subeventhandler;
 
 use ggez::event;
 use ggez::ContextBuilder;
