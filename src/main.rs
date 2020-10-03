@@ -1,3 +1,18 @@
+mod game;
+
+use ggez::ContextBuilder;
+use ggez::event;
+
 fn main() {
-    println!("Hello, world!");
+    let (mut ctx, mut event_loop) =
+        ContextBuilder::new("ld47_stuckinaloop", "Stephen Seo")
+            .build()
+            .unwrap();
+
+    let mut game = game::Game::new(&mut ctx);
+
+    match event::run(&mut ctx, &mut event_loop, &mut game) {
+        Ok(_) => println!("Exited cleanly"),
+        Err(e) => println!("ERROR: {}", e)
+    }
 }
