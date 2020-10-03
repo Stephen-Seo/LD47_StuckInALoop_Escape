@@ -1,8 +1,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use ggez::audio::{SoundSource, Source};
 use ggez::event::EventHandler;
-use ggez::graphics::{self, Font, Text};
+use ggez::graphics::{self, DrawParam, Font, Image, Text};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
 
@@ -16,10 +17,16 @@ pub struct MainScene {
     current_text: Text,
     final_text: String,
     text_idx: usize,
+    music: Source,
+    pod_image: Image,
+    pod_empty_image: Image,
 }
 
 impl MainScene {
-    pub fn new(_ctx: &mut Context, font: Font, player: Rc<RefCell<Player>>) -> Self {
+    pub fn new(ctx: &mut Context, font: Font, player: Rc<RefCell<Player>>) -> Self {
+        let mut music = Source::new(ctx, "/music00.ogg").unwrap();
+        music.set_repeat(true);
+        //        music.play().unwrap();
         Self {
             font,
             player,
@@ -27,6 +34,9 @@ impl MainScene {
             current_text: Text::new("".to_owned()),
             final_text: String::new(),
             text_idx: 0usize,
+            music,
+            pod_image: Image::new(ctx, "/stasis_pod.png").unwrap(),
+            pod_empty_image: Image::new(ctx, "/stasis_pod_empty.png").unwrap(),
         }
     }
 
@@ -36,12 +46,18 @@ impl MainScene {
 }
 
 impl EventHandler for MainScene {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        self.player.borrow_mut().update(ctx)?;
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.player.borrow_mut().draw(ctx)?;
+        graphics::draw(
+            ctx,
+            &self.pod_image,
+            DrawParam::new().dest([600f32, 170f32]).rotation(0.7f32),
+        )?;
         Ok(())
     }
 

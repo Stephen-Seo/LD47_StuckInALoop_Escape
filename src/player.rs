@@ -3,7 +3,7 @@ use ggez::graphics::{self, Color, DrawParam, Image, Rect};
 use ggez::timer::delta;
 use ggez::{Context, GameResult};
 
-const WALK_TIME: f32 = 0.4f32;
+const WALK_TIME: f32 = 0.34f32;
 
 pub enum PlayerState {
     Standing,
@@ -16,16 +16,18 @@ pub struct Player {
     pub y: f32,
     state: PlayerState,
     pub color: Color,
+    xflip: bool,
 }
 
 impl Player {
     pub fn new(ctx: &mut Context, color: Color) -> GameResult<Self> {
         Ok(Self {
             sprite: Image::new(ctx, "/player_sprite.png")?,
-            x: 0f32,
-            y: 0f32,
+            x: 300f32,
+            y: 300f32,
             state: PlayerState::Standing,
             color,
+            xflip: false,
         })
     }
 
@@ -35,6 +37,10 @@ impl Player {
         } else {
             self.state = PlayerState::Walking(true, 0f32);
         }
+    }
+
+    pub fn set_xflip(&mut self, xflip: bool) {
+        self.xflip = xflip;
     }
 }
 
@@ -57,44 +63,93 @@ impl EventHandler for Player {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         match &self.state {
             PlayerState::Standing => {
-                graphics::draw(
-                    ctx,
-                    &self.sprite,
-                    DrawParam::new()
-                        .src(Rect::new(0f32, 0f32, 0.3333333333333f32, 1f32))
-                        .dest([self.x, self.y])
-                        .color(self.color),
-                )?;
-            }
-            PlayerState::Walking(left, _) => {
-                if *left {
+                if self.xflip {
                     graphics::draw(
                         ctx,
                         &self.sprite,
                         DrawParam::new()
-                            .src(Rect::new(
-                                0.3333333333333f32,
-                                0f32,
-                                0.3333333333333f32,
-                                1f32,
-                            ))
+                            .src(Rect::new(0f32, 0f32, 0.3333333333333f32, 1f32))
                             .dest([self.x, self.y])
-                            .color(self.color),
+                            .color(self.color)
+                            .scale([-1f32, 1f32])
+                            .offset([1f32, 0f32]),
                     )?;
                 } else {
                     graphics::draw(
                         ctx,
                         &self.sprite,
                         DrawParam::new()
-                            .src(Rect::new(
-                                0.6666666666666f32,
-                                0f32,
-                                0.3333333333333f32,
-                                1f32,
-                            ))
+                            .src(Rect::new(0f32, 0f32, 0.3333333333333f32, 1f32))
                             .dest([self.x, self.y])
                             .color(self.color),
                     )?;
+                }
+            }
+            PlayerState::Walking(left, _) => {
+                if *left {
+                    if self.xflip {
+                        graphics::draw(
+                            ctx,
+                            &self.sprite,
+                            DrawParam::new()
+                                .src(Rect::new(
+                                    0.3333333333333f32,
+                                    0f32,
+                                    0.3333333333333f32,
+                                    1f32,
+                                ))
+                                .dest([self.x, self.y])
+                                .color(self.color)
+                                .scale([-1f32, 1f32])
+                                .offset([1f32, 0f32]),
+                        )?;
+                    } else {
+                        graphics::draw(
+                            ctx,
+                            &self.sprite,
+                            DrawParam::new()
+                                .src(Rect::new(
+                                    0.3333333333333f32,
+                                    0f32,
+                                    0.3333333333333f32,
+                                    1f32,
+                                ))
+                                .dest([self.x, self.y])
+                                .color(self.color),
+                        )?;
+                    }
+                } else {
+                    if self.xflip {
+                        graphics::draw(
+                            ctx,
+                            &self.sprite,
+                            DrawParam::new()
+                                .src(Rect::new(
+                                    0.6666666666666f32,
+                                    0f32,
+                                    0.3333333333333f32,
+                                    1f32,
+                                ))
+                                .dest([self.x, self.y])
+                                .color(self.color)
+                                .scale([-1f32, 1f32])
+                                .offset([1f32, 0f32]),
+                        )?;
+                    } else {
+                        graphics::draw(
+                            ctx,
+                            &self.sprite,
+                            DrawParam::new()
+                                .src(Rect::new(
+                                    0.6666666666666f32,
+                                    0f32,
+                                    0.3333333333333f32,
+                                    1f32,
+                                ))
+                                .dest([self.x, self.y])
+                                .color(self.color),
+                        )?;
+                    }
                 }
             }
         }
