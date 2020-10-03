@@ -23,6 +23,7 @@ pub struct GameStartScene {
     color_blue: Color,
     pick_color_text: Text,
     player: Rc<RefCell<Player>>,
+    drawed_loading_text: bool,
 }
 
 impl GameStartScene {
@@ -43,6 +44,7 @@ impl GameStartScene {
             color_blue: Color::from_rgb(0, 0, 0xff),
             pick_color_text,
             player,
+            drawed_loading_text: false,
         }
     }
 
@@ -144,6 +146,19 @@ impl EventHandler for GameStartScene {
             DrawParam::new().dest([400f32 + 128f32 - 64f32, 328f32]),
         )?;
 
+        if self.finished {
+            self.pick_color_text = Text::new("Loading...");
+            self.pick_color_text
+                .set_font(self.font, Scale::uniform(32f32));
+            let text_width = self.pick_color_text.width(ctx) as f32 / 2f32;
+            graphics::draw(
+                ctx,
+                &self.pick_color_text,
+                DrawParam::new().dest([400f32 - text_width, 520f32]),
+            )?;
+            self.drawed_loading_text = true;
+        }
+
         Ok(())
     }
 
@@ -185,6 +200,6 @@ impl EventHandler for GameStartScene {
 
 impl Scene for GameStartScene {
     fn finished(&self) -> bool {
-        self.finished
+        self.finished && self.drawed_loading_text
     }
 }
