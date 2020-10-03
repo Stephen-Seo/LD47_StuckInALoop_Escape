@@ -62,14 +62,9 @@ impl EventHandler for Game {
         graphics::present(ctx)
     }
 
-    fn mouse_button_down_event(
-        &mut self,
-        ctx: &mut Context,
-        button: MouseButton,
-        x: f32,
-        y: f32,
-    ) {
-        self.current_scene.mouse_button_down_event(ctx, button, x, y);
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+        self.current_scene
+            .mouse_button_down_event(ctx, button, x, y);
     }
 
     fn key_down_event(
@@ -79,6 +74,7 @@ impl EventHandler for Game {
         keymods: KeyMods,
         repeat: bool,
     ) {
-        self.current_scene.key_down_event(ctx, keycode, keymods, repeat);
+        self.current_scene
+            .key_down_event(ctx, keycode, keymods, repeat);
     }
 }
