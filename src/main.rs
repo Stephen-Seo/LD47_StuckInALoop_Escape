@@ -1,4 +1,6 @@
+mod door;
 mod game;
+mod interactable;
 mod player;
 mod scenes;
 
