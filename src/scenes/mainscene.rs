@@ -14,6 +14,7 @@ use super::Scene;
 use crate::door::Door;
 use crate::interactable::{Interactable, InteractableType};
 use crate::player::Player;
+use crate::puzzle::Puzzle;
 
 const DARKNESS_PAN_RATE: f32 = 40f32;
 const FLICKER_TIME: [f32; 6] = [1f32, 0.1f32, 0.85f32, 0.07f32, 0.12f32, 0.09f32];
@@ -33,6 +34,7 @@ enum State {
     Investigate,
     EnterDoor(Room),
     ExitDoor,
+    InPuzzle(PuzzleID),
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -42,6 +44,7 @@ enum Room {
     MainHallFrontOfPod,
     WindowRightHall,
     LeftHall,
+    FarRightHall,
 }
 
 enum WalkingState {
@@ -60,6 +63,11 @@ enum DoorIDs {
 enum DiscoveryState {
     Normal,
     Discovery,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+pub enum PuzzleID {
+    FarRightHall,
 }
 
 pub struct MainScene {
@@ -87,7 +95,7 @@ pub struct MainScene {
     doors: Vec<Door>,
     door_text: Text,
     door_sfx: Source,
-    // (is_open, is_locked)
+    // (is_open, is_unlocked)
     door_states: HashMap<DoorIDs, (bool, bool)>,
     earth_image: Image,
     discovery_state: DiscoveryState,
@@ -95,6 +103,8 @@ pub struct MainScene {
     saw_earth: bool,
     window_image: Image,
     error_sfx: Source,
+    puzzle_states: HashMap<PuzzleID, bool>,
+    puzzle: Option<Puzzle>,
 }
 
 impl MainScene {
@@ -109,7 +119,6 @@ impl MainScene {
         door_text.set_font(font, Scale::uniform(20f32));
 
         let door_states = HashMap::new();
-        // door_states.insert(DoorIDs::LeftOfPod, false);
 
         Self {
             font,
@@ -143,6 +152,8 @@ impl MainScene {
             saw_earth: false,
             window_image: Image::new(ctx, "/window.png").unwrap(),
             error_sfx: Source::new(ctx, "/error_sfx.ogg").unwrap(),
+            puzzle_states: HashMap::new(),
+            puzzle: None,
         }
     }
 
@@ -221,19 +232,34 @@ impl MainScene {
                 self.doors.clear();
                 self.interactables.clear();
                 self.doors
-                    .push(Door::new(false, 100f32, 600f32 - 160f32 - 50f32, 0));
+                    .push(Door::new(false, 150f32, 600f32 - 160f32 - 50f32, 0));
                 if let Some((true, _)) = self.door_states.get(&DoorIDs::LeftHall) {
                     self.doors[0].set_open(true);
                 }
                 self.interactables.push(Interactable::new(
                     InteractableType::LockedDoor(0, false),
-                    70f32,
+                    120f32,
                     450f32,
                 ));
                 if let Some((_, true)) = self.door_states.get(&DoorIDs::LeftHall) {
                     self.interactables[0].set_unlocked(true);
                 }
                 self.darkness_yoffset = -250f32;
+            }
+            Room::FarRightHall => {
+                self.doors.clear();
+                self.interactables.clear();
+                self.interactables.push(Interactable::new(
+                    InteractableType::Puzzle(PuzzleID::FarRightHall, false),
+                    400f32,
+                    500f32,
+                ));
+                if self.puzzle_states.contains_key(&PuzzleID::FarRightHall) {
+                    if let Some(true) = self.puzzle_states.get(&PuzzleID::FarRightHall) {
+                        self.interactables[0].set_puzzle_cleared(true);
+                    }
+                }
+                self.darkness_yoffset = -450f32;
             }
         }
     }
@@ -254,9 +280,13 @@ impl MainScene {
             }
             Room::WindowRightHall => {
                 draw_left = true;
+                draw_right = true;
             }
             Room::LeftHall => {
                 draw_right = true;
+            }
+            Room::FarRightHall => {
+                draw_left = true;
             }
         }
 
@@ -299,6 +329,11 @@ impl MainScene {
                 self.init_room();
             }
             Room::LeftHall => (),
+            Room::FarRightHall => {
+                self.room = Room::WindowRightHall;
+                self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
+                self.init_room();
+            }
         }
     }
 
@@ -315,12 +350,17 @@ impl MainScene {
                 self.player.borrow_mut().x = 70f32;
                 self.init_room();
             }
-            Room::WindowRightHall => {}
+            Room::WindowRightHall => {
+                self.room = Room::FarRightHall;
+                self.player.borrow_mut().x = 70f32;
+                self.init_room();
+            }
             Room::LeftHall => {
                 self.room = Room::MainHallFrontOfPod;
                 self.player.borrow_mut().x = 70f32;
                 self.init_room();
             }
+            Room::FarRightHall => (),
         }
     }
 
@@ -346,6 +386,7 @@ impl MainScene {
                 Room::LeftHall => {
                     // TODO
                 }
+                Room::FarRightHall => (),
             }
         }
     }
@@ -375,6 +416,7 @@ impl MainScene {
                     }
                     Room::WindowRightHall => (),
                     Room::LeftHall => (),
+                    Room::FarRightHall => (),
                 }
                 self.door_sfx.play()?;
             }
@@ -408,6 +450,20 @@ impl MainScene {
                         self.error_sfx.play()?;
                     }
                 }
+                Room::FarRightHall => (),
+            },
+            InteractableType::Puzzle(id, cleared) => match self.room {
+                Room::StasisPod
+                | Room::LeftOfPod
+                | Room::MainHallFrontOfPod
+                | Room::LeftHall
+                | Room::WindowRightHall => (),
+                Room::FarRightHall => {
+                    if !cleared {
+                        self.state = State::InPuzzle(id);
+                        self.puzzle = Some(Puzzle::new(id, self.font));
+                    }
+                }
             },
         }
         Ok(())
@@ -439,12 +495,34 @@ impl MainScene {
                 )?;
             }
             Room::LeftHall => {}
+            Room::FarRightHall => {}
         }
         for door in &self.doors {
             door.draw(ctx, &self.door_image)?;
         }
         for interactable in &self.interactables {
             interactable.draw(ctx)?;
+        }
+        Ok(())
+    }
+
+    fn handle_solved_puzzle(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        match self.state {
+            State::InPodInDarkness
+            | State::InPodWakeupText
+            | State::GetOutOfPod
+            | State::Investigate
+            | State::EnterDoor(_)
+            | State::ExitDoor => unreachable!("Cannot solve puzzle from invalid state"),
+            State::InPuzzle(id) => match id {
+                PuzzleID::FarRightHall => {
+                    self.puzzle_states.insert(id, true);
+                    self.puzzle = None;
+                    self.interactables[0].set_puzzle_cleared(true);
+                    self.door_states.insert(DoorIDs::LeftHall, (false, true));
+                    self.door_states.insert(DoorIDs::LeftOfPod, (false, false));
+                }
+            },
         }
         Ok(())
     }
@@ -561,6 +639,20 @@ impl EventHandler for MainScene {
                     self.player.borrow_mut().color.a = 1f32 - self.timer / DOOR_EXIT_ENTER_TIME;
                 }
             }
+            State::InPuzzle(_) => {
+                if let Some(puzzle) = &mut self.puzzle {
+                    if puzzle.is_solved() {
+                        self.handle_solved_puzzle(ctx)?;
+                    } else if puzzle.is_abort() {
+                        self.puzzle = None;
+                        self.state = State::Investigate;
+                    } else {
+                        puzzle.update(ctx)?;
+                    }
+                } else {
+                    self.state = State::Investigate;
+                }
+            }
         }
         self.player.borrow_mut().update(ctx)?;
         if self.discovery_state == DiscoveryState::Discovery && self.discovery_music.stopped() {
@@ -613,6 +705,7 @@ impl EventHandler for MainScene {
             State::ExitDoor => {
                 self.draw_room(ctx)?;
             }
+            State::InPuzzle(_) => (),
         }
 
         self.player.borrow_mut().draw(ctx)?;
@@ -648,6 +741,7 @@ impl EventHandler for MainScene {
                     Room::MainHallFrontOfPod => {}
                     Room::WindowRightHall => (),
                     Room::LeftHall => (),
+                    Room::FarRightHall => (),
                 }
 
                 for interactable in &self.interactables {
@@ -685,12 +779,17 @@ impl EventHandler for MainScene {
                 self.draw_room_arrows(ctx)?;
             }
             State::EnterDoor(_) | State::ExitDoor => (),
+            State::InPuzzle(_) => {
+                if let Some(puzzle) = &mut self.puzzle {
+                    puzzle.draw(ctx)?;
+                }
+            }
         }
 
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         match self.state {
             State::InPodInDarkness => (),
             State::InPodWakeupText => {
@@ -742,6 +841,13 @@ impl EventHandler for MainScene {
                 }
             }
             State::EnterDoor(_) | State::ExitDoor => (),
+            State::InPuzzle(_) => {
+                if let Some(puzzle) = &mut self.puzzle {
+                    if button == MouseButton::Left {
+                        puzzle.handle_click(ctx, x, y);
+                    }
+                }
+            }
         }
     }
 
@@ -756,12 +862,13 @@ impl EventHandler for MainScene {
                 }
             }
             State::EnterDoor(_) | State::ExitDoor => (),
+            State::InPuzzle(_) => {}
         }
     }
 
     fn key_down_event(
         &mut self,
-        _ctx: &mut Context,
+        ctx: &mut Context,
         keycode: KeyCode,
         _keymods: KeyMods,
         _repeat: bool,
@@ -820,6 +927,11 @@ impl EventHandler for MainScene {
                 }
             }
             State::EnterDoor(_) | State::ExitDoor => (),
+            State::InPuzzle(_) => {
+                if let Some(puzzle) = &mut self.puzzle {
+                    puzzle.handle_key(ctx, keycode);
+                }
+            }
         }
     }
 
@@ -836,6 +948,7 @@ impl EventHandler for MainScene {
                 }
             }
             State::EnterDoor(_) | State::ExitDoor => (),
+            State::InPuzzle(_) => {}
         }
     }
 }

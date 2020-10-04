@@ -1,12 +1,15 @@
 use ggez::graphics::{self, Color, DrawMode, DrawParam, Mesh, Rect};
 use ggez::{Context, GameResult};
 
+use crate::scenes::mainscene::PuzzleID;
+
 const DEFAULT_RADIUS: f32 = 70f32;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum InteractableType {
     Door(usize),
     LockedDoor(usize, bool),
+    Puzzle(PuzzleID, bool),
 }
 
 pub struct Interactable {
@@ -86,6 +89,25 @@ impl Interactable {
                     DrawParam::new().dest([self.x - 7f32, self.y - 8f32]),
                 )?;
             }
+            InteractableType::Puzzle(_, cleared) => {
+                let color;
+                if cleared {
+                    color = Color::from_rgb(0x3f, 0xf8, 0x4c);
+                } else {
+                    color = Color::from_rgb(0xef, 0, 0);
+                }
+                let panel_mesh = Mesh::new_rectangle(
+                    ctx,
+                    DrawMode::fill(),
+                    Rect::new(0f32, 0f32, 40f32, 30f32),
+                    color,
+                )?;
+                graphics::draw(
+                    ctx,
+                    &panel_mesh,
+                    DrawParam::new().dest([self.x - 20f32, self.y - 15f32]),
+                )?;
+            }
         }
 
         Ok(())
@@ -94,6 +116,12 @@ impl Interactable {
     pub fn set_unlocked(&mut self, unlocked: bool) {
         if let InteractableType::LockedDoor(_, is_unlocked) = &mut self.itype {
             *is_unlocked = unlocked;
+        }
+    }
+
+    pub fn set_puzzle_cleared(&mut self, cleared: bool) {
+        if let InteractableType::Puzzle(_, is_cleared) = &mut self.itype {
+            *is_cleared = cleared;
         }
     }
 }

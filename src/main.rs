@@ -2,6 +2,7 @@ mod door;
 mod game;
 mod interactable;
 mod player;
+mod puzzle;
 mod scenes;
 
 use ggez::conf::WindowSetup;
