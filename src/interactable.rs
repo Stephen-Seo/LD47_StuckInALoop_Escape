@@ -6,6 +6,7 @@ const DEFAULT_RADIUS: f32 = 70f32;
 #[derive(Copy, Clone, PartialEq)]
 pub enum InteractableType {
     Door(usize),
+    LockedDoor(usize, bool),
 }
 
 pub struct Interactable {
@@ -66,8 +67,33 @@ impl Interactable {
                     DrawParam::new().dest([self.x - 7f32, self.y - 8f32]),
                 )?;
             }
+            InteractableType::LockedDoor(_, unlocked) => {
+                let color;
+                if unlocked {
+                    color = Color::from_rgb(0x16, 0x9c, 0xd8);
+                } else {
+                    color = Color::from_rgb(0xdf, 0, 0);
+                }
+                let panel_mesh = Mesh::new_rectangle(
+                    ctx,
+                    DrawMode::fill(),
+                    Rect::new(0f32, 0f32, 14f32, 16f32),
+                    color,
+                )?;
+                graphics::draw(
+                    ctx,
+                    &panel_mesh,
+                    DrawParam::new().dest([self.x - 7f32, self.y - 8f32]),
+                )?;
+            }
         }
 
         Ok(())
+    }
+
+    pub fn set_unlocked(&mut self, unlocked: bool) {
+        if let InteractableType::LockedDoor(_, is_unlocked) = &mut self.itype {
+            *is_unlocked = unlocked;
+        }
     }
 }
