@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use ggez::audio::{SoundSource, Source};
@@ -41,6 +42,11 @@ enum WalkingState {
     Right,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+enum DoorIDs {
+    LeftOfPod,
+}
+
 pub struct MainScene {
     font: Font,
     player: Rc<RefCell<Player>>,
@@ -65,19 +71,24 @@ pub struct MainScene {
     interact_text: Text,
     doors: Vec<Door>,
     door_text: Text,
+    door_sfx: Source,
+    door_states: HashMap<DoorIDs, bool>,
 }
 
 impl MainScene {
     pub fn new(ctx: &mut Context, font: Font, player: Rc<RefCell<Player>>) -> Self {
         let mut music = Source::new(ctx, "/music00.ogg").unwrap();
         music.set_repeat(true);
-        //        music.play().unwrap();
         let mut current_text = Text::new("");
         current_text.set_font(font, Scale::uniform(26f32));
         let mut interact_text = Text::new("[E] or Left Click to Interact");
         interact_text.set_font(font, Scale::uniform(20f32));
         let mut door_text = Text::new("[W] or Right Click to enter door");
         door_text.set_font(font, Scale::uniform(20f32));
+
+        let door_states = HashMap::new();
+        // door_states.insert(DoorIDs::LeftOfPod, false);
+
         Self {
             font,
             player,
@@ -102,6 +113,8 @@ impl MainScene {
             interact_text,
             doors: Vec::new(),
             door_text,
+            door_sfx: Source::new(ctx, "/door.ogg").unwrap(),
+            door_states,
         }
     }
 
@@ -131,6 +144,9 @@ impl MainScene {
                 self.doors.clear();
                 self.doors
                     .push(Door::new(false, 300f32, 600f32 - 160f32 - 50f32, 0));
+                if let Some(true) = self.door_states.get(&DoorIDs::LeftOfPod) {
+                    self.doors[0].set_open(true);
+                }
             }
         }
     }
@@ -189,12 +205,25 @@ impl MainScene {
         }
     }
 
-    fn use_interactable(&mut self, itype: InteractableType) {
+    fn use_interactable(&mut self, itype: InteractableType) -> GameResult<()> {
         match itype {
             InteractableType::Door(id) => {
-                self.doors[id].toggle_open();
+                match self.room {
+                    Room::StasisPod => (),
+                    Room::LeftOfPod => {
+                        if self.door_states.contains_key(&DoorIDs::LeftOfPod) {
+                            *self.door_states.get_mut(&DoorIDs::LeftOfPod).unwrap() =
+                                self.doors[id].toggle_open();
+                        } else {
+                            self.door_states
+                                .insert(DoorIDs::LeftOfPod, self.doors[id].toggle_open());
+                        }
+                    }
+                }
+                self.door_sfx.play()?;
             }
         }
+        Ok(())
     }
 }
 
@@ -449,7 +478,7 @@ impl EventHandler for MainScene {
                         }
                     }
                     if let Some(it) = itype {
-                        self.use_interactable(it);
+                        self.use_interactable(it).unwrap();
                     } else if self.player.borrow().x > x {
                         self.walking_state = WalkingState::Left;
                     } else if self.player.borrow().x + 64f32 < x {
@@ -513,7 +542,7 @@ impl EventHandler for MainScene {
                         }
                     }
                     if let Some(it) = itype {
-                        self.use_interactable(it);
+                        self.use_interactable(it).unwrap();
                     }
                 }
             }
