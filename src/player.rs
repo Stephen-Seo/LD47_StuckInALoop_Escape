@@ -1,5 +1,4 @@
-use ggez::event::EventHandler;
-use ggez::graphics::{self, Color, DrawParam, Drawable, Image, Rect};
+use ggez::graphics::{self, Color, DrawParam, Image, Rect};
 use ggez::timer::delta;
 use ggez::{Context, GameResult};
 
