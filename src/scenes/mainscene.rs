@@ -105,6 +105,7 @@ pub struct MainScene {
     error_sfx: Source,
     puzzle_states: HashMap<PuzzleID, bool>,
     puzzle: Option<Puzzle>,
+    success_sfx: Source,
 }
 
 impl MainScene {
@@ -154,6 +155,7 @@ impl MainScene {
             error_sfx: Source::new(ctx, "/error_sfx.ogg").unwrap(),
             puzzle_states: HashMap::new(),
             puzzle: None,
+            success_sfx: Source::new(ctx, "/success.ogg").unwrap(),
         }
     }
 
@@ -524,6 +526,7 @@ impl MainScene {
                 }
             },
         }
+        self.success_sfx.play()?;
         Ok(())
     }
 }
