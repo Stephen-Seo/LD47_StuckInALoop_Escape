@@ -1,3 +1,9 @@
+# Links
+
+[ldjam page](https://ldjam.com/events/ludum-dare/47/escape)
+
+[itch.io page](https://seodisparate.itch.io/ludumdare-47-entry-escape)
+
 # Compiling
 
 `cargo build --release`
