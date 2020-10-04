@@ -1,4 +1,4 @@
-use ggez::graphics::{self, DrawParam, Image, Rect};
+use ggez::graphics::{self, DrawMode, DrawParam, Image, Mesh, Rect};
 use ggez::{Context, GameResult};
 
 const DEFAULT_RADIUS: f32 = 70f32;
@@ -24,6 +24,13 @@ impl Door {
 
     pub fn draw(&self, ctx: &mut Context, door_image: &Image) -> GameResult<()> {
         if self.is_open {
+            let bg_mesh = Mesh::new_rectangle(
+                ctx,
+                DrawMode::fill(),
+                Rect::new(0f32, 0f32, 96f32, 160f32),
+                graphics::BLACK,
+            )?;
+            graphics::draw(ctx, &bg_mesh, DrawParam::new().dest([self.x, self.y]))?;
             graphics::draw(
                 ctx,
                 door_image,

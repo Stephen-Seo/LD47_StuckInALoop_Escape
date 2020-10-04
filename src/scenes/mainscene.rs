@@ -106,6 +106,7 @@ pub struct MainScene {
     puzzle_states: HashMap<PuzzleID, bool>,
     puzzle: Option<Puzzle>,
     success_sfx: Source,
+    bg_image: Image,
 }
 
 impl MainScene {
@@ -156,6 +157,7 @@ impl MainScene {
             puzzle_states: HashMap::new(),
             puzzle: None,
             success_sfx: Source::new(ctx, "/success.ogg").unwrap(),
+            bg_image: Image::new(ctx, "/bg.png").unwrap(),
         }
     }
 
@@ -667,6 +669,7 @@ impl EventHandler for MainScene {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         {
+            graphics::draw(ctx, &self.bg_image, DrawParam::new())?;
             let ground_mesh = Mesh::new_rectangle(
                 ctx,
                 DrawMode::fill(),
