@@ -27,8 +27,8 @@ const DOOR_EXIT_ENTER_TIME: f32 = 1f32;
 
 #[derive(Copy, Clone, PartialEq)]
 enum State {
-    InPod_InDarkness,
-    InPod_WakeupText,
+    InPodInDarkness,
+    InPodWakeupText,
     GetOutOfPod,
     Investigate,
     EnterDoor(Room),
@@ -40,6 +40,7 @@ enum Room {
     StasisPod,
     LeftOfPod,
     MainHallFrontOfPod,
+    WindowRightHall,
 }
 
 enum WalkingState {
@@ -51,6 +52,12 @@ enum WalkingState {
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 enum DoorIDs {
     LeftOfPod,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+enum DiscoveryState {
+    Normal,
+    Discovery,
 }
 
 pub struct MainScene {
@@ -79,6 +86,11 @@ pub struct MainScene {
     door_text: Text,
     door_sfx: Source,
     door_states: HashMap<DoorIDs, bool>,
+    earth_image: Image,
+    discovery_state: DiscoveryState,
+    discovery_music: Source,
+    saw_earth: bool,
+    window_image: Image,
 }
 
 impl MainScene {
@@ -106,7 +118,7 @@ impl MainScene {
             pod_image: Image::new(ctx, "/stasis_pod.png").unwrap(),
             pod_flicker_image: Image::new(ctx, "/stasis_pod_empty.png").unwrap(),
             ground_rect: Rect::new(0f32, 550f32, 800f32, 50f32),
-            state: State::InPod_InDarkness,
+            state: State::InPodInDarkness,
             darkness_image: Image::new(ctx, "/darkness.png").unwrap(),
             darkness_yoffset: 0f32,
             timer: FLICKER_TIME[0],
@@ -121,6 +133,11 @@ impl MainScene {
             door_text,
             door_sfx: Source::new(ctx, "/door.ogg").unwrap(),
             door_states,
+            earth_image: Image::new(ctx, "/earth.png").unwrap(),
+            discovery_state: DiscoveryState::Normal,
+            discovery_music: Source::new(ctx, "/music03.ogg").unwrap(),
+            saw_earth: false,
+            window_image: Image::new(ctx, "/window.png").unwrap(),
         }
     }
 
@@ -161,11 +178,14 @@ impl MainScene {
                 self.doors.clear();
                 self.interactables.clear();
                 self.doors.push(Door::new(
-                    true,
+                    false,
                     400f32 - 96f32 / 2f32,
                     600f32 - 160f32 - 50f32,
                     0,
                 ));
+                if let Some(true) = self.door_states.get(&DoorIDs::LeftOfPod) {
+                    self.doors[0].set_open(true);
+                }
                 self.interactables.push(Interactable::new(
                     InteractableType::Door(0),
                     330f32,
@@ -175,6 +195,17 @@ impl MainScene {
                     self.player.borrow_mut().x = 400f32 - 96f32 / 2f32 + (96f32 - 64f32) / 2f32;
                 }
                 self.darkness_yoffset = -300f32;
+            }
+            Room::WindowRightHall => {
+                self.doors.clear();
+                self.interactables.clear();
+                self.darkness_yoffset = -470f32;
+                if !self.saw_earth {
+                    self.saw_earth = true;
+                    self.discovery_state = DiscoveryState::Discovery;
+                    self.music.stop();
+                    self.discovery_music.play().unwrap();
+                }
             }
         }
     }
@@ -192,6 +223,9 @@ impl MainScene {
             Room::MainHallFrontOfPod => {
                 draw_left = true;
                 draw_right = true;
+            }
+            Room::WindowRightHall => {
+                draw_left = true;
             }
         }
 
@@ -219,11 +253,16 @@ impl MainScene {
         match self.room {
             Room::StasisPod => {
                 self.room = Room::LeftOfPod;
-                self.player.borrow_mut().x = 800f32 - 70f32;
+                self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
                 self.init_room();
             }
             Room::LeftOfPod => (),
             Room::MainHallFrontOfPod => {}
+            Room::WindowRightHall => {
+                self.room = Room::MainHallFrontOfPod;
+                self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
+                self.init_room();
+            }
         }
     }
 
@@ -235,7 +274,12 @@ impl MainScene {
                 self.player.borrow_mut().x = 70f32;
                 self.init_room();
             }
-            Room::MainHallFrontOfPod => {}
+            Room::MainHallFrontOfPod => {
+                self.room = Room::WindowRightHall;
+                self.player.borrow_mut().x = 70f32;
+                self.init_room();
+            }
+            Room::WindowRightHall => {}
         }
     }
 
@@ -257,6 +301,7 @@ impl MainScene {
                         self.doors[door_idx].get_x() + (96f32 - 64f32) / 2f32;
                     self.player.borrow_mut().set_walking(true);
                 }
+                Room::WindowRightHall => (),
             }
         }
     }
@@ -284,6 +329,7 @@ impl MainScene {
                                 .insert(DoorIDs::LeftOfPod, self.doors[id].toggle_open());
                         }
                     }
+                    Room::WindowRightHall => (),
                 }
                 self.door_sfx.play()?;
             }
@@ -302,6 +348,20 @@ impl MainScene {
             }
             Room::LeftOfPod => {}
             Room::MainHallFrontOfPod => {}
+            Room::WindowRightHall => {
+                graphics::draw(
+                    ctx,
+                    &self.earth_image,
+                    DrawParam::new()
+                        .src(Rect::new(0f32, 0f32, 3f32 / 5f32, 3f32 / 5f32))
+                        .dest([800f32 / 5f32, 600f32 / 5f32]),
+                )?;
+                graphics::draw(
+                    ctx,
+                    &self.window_image,
+                    DrawParam::new().dest([800f32 / 5f32, 600f32 / 5f32]),
+                )?;
+            }
         }
         for door in &self.doors {
             door.draw(ctx, &self.door_image)?;
@@ -317,7 +377,7 @@ impl EventHandler for MainScene {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let dt = delta(ctx).as_secs_f32();
         match &self.state {
-            State::InPod_InDarkness => {
+            State::InPodInDarkness => {
                 let mut player = self.player.borrow_mut();
                 player.x = 520f32;
                 player.y = 350f32;
@@ -331,12 +391,12 @@ impl EventHandler for MainScene {
                 if self.darkness_yoffset > -300f32 {
                     self.darkness_yoffset -= dt * DARKNESS_PAN_RATE;
                 } else {
-                    self.state = State::InPod_WakeupText;
+                    self.state = State::InPodWakeupText;
                     self.timer = TEXT_RATE;
                     self.final_text = "What.. Where am I?..".chars().rev().collect::<String>();
                 }
             }
-            State::InPod_WakeupText => {
+            State::InPodWakeupText => {
                 if !self.final_text.is_empty() {
                     self.timer -= dt;
                     if self.timer <= 0f32 {
@@ -404,6 +464,7 @@ impl EventHandler for MainScene {
                     Room::StasisPod => (),
                     Room::LeftOfPod => (),
                     Room::MainHallFrontOfPod => (),
+                    Room::WindowRightHall => (),
                 }
             }
             State::EnterDoor(room) => {
@@ -433,6 +494,10 @@ impl EventHandler for MainScene {
             }
         }
         self.player.borrow_mut().update(ctx)?;
+        if self.discovery_state == DiscoveryState::Discovery && self.discovery_music.stopped() {
+            self.discovery_state = DiscoveryState::Normal;
+            self.music.play()?;
+        }
         Ok(())
     }
 
@@ -448,7 +513,7 @@ impl EventHandler for MainScene {
         }
 
         match self.state {
-            State::InPod_InDarkness => {
+            State::InPodInDarkness => {
                 if self.draw_flicker_pod {
                     graphics::draw(
                         ctx,
@@ -462,29 +527,26 @@ impl EventHandler for MainScene {
                         DrawParam::new().dest([600f32, 170f32]).rotation(0.7f32),
                     )?;
                 }
-                self.player.borrow_mut().draw(ctx)?;
             }
-            State::InPod_WakeupText | State::GetOutOfPod => {
+            State::InPodWakeupText | State::GetOutOfPod => {
                 graphics::draw(
                     ctx,
                     &self.pod_flicker_image,
                     DrawParam::new().dest([600f32, 170f32]).rotation(0.7f32),
                 )?;
-                self.player.borrow_mut().draw(ctx)?;
             }
             State::Investigate => {
                 self.draw_room(ctx)?;
-                self.player.borrow_mut().draw(ctx)?;
             }
             State::EnterDoor(_) => {
                 self.draw_room(ctx)?;
-                self.player.borrow_mut().draw(ctx)?;
             }
             State::ExitDoor => {
                 self.draw_room(ctx)?;
-                self.player.borrow_mut().draw(ctx)?;
             }
         }
+
+        self.player.borrow_mut().draw(ctx)?;
 
         graphics::draw(
             ctx,
@@ -493,8 +555,8 @@ impl EventHandler for MainScene {
         )?;
 
         match self.state {
-            State::InPod_InDarkness => (),
-            State::InPod_WakeupText => {
+            State::InPodInDarkness => (),
+            State::InPodWakeupText => {
                 graphics::draw(
                     ctx,
                     &self.current_text,
@@ -515,6 +577,7 @@ impl EventHandler for MainScene {
                     }
                     Room::LeftOfPod => {}
                     Room::MainHallFrontOfPod => {}
+                    Room::WindowRightHall => (),
                 }
 
                 for interactable in &self.interactables {
@@ -557,10 +620,10 @@ impl EventHandler for MainScene {
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
         match self.state {
-            State::InPod_InDarkness => (),
-            State::InPod_WakeupText => {
+            State::InPodInDarkness => (),
+            State::InPodWakeupText => {
                 if self.final_text.is_empty() && self.timer <= 0f32 {
                     self.state = State::GetOutOfPod;
                     self.timer = GET_OUT_OF_POD_TIME;
@@ -612,10 +675,10 @@ impl EventHandler for MainScene {
         }
     }
 
-    fn mouse_button_up_event(&mut self, ctx: &mut Context, button: MouseButton, x: f32, y: f32) {
+    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
         match self.state {
-            State::InPod_InDarkness => (),
-            State::InPod_WakeupText => (),
+            State::InPodInDarkness => (),
+            State::InPodWakeupText => (),
             State::GetOutOfPod => (),
             State::Investigate => {
                 if button == MouseButton::Left {
@@ -628,14 +691,14 @@ impl EventHandler for MainScene {
 
     fn key_down_event(
         &mut self,
-        ctx: &mut Context,
+        _ctx: &mut Context,
         keycode: KeyCode,
         _keymods: KeyMods,
         _repeat: bool,
     ) {
         match self.state {
-            State::InPod_InDarkness => (),
-            State::InPod_WakeupText => {
+            State::InPodInDarkness => (),
+            State::InPodWakeupText => {
                 if self.final_text.is_empty() && self.timer <= 0f32 {
                     self.state = State::GetOutOfPod;
                     self.timer = GET_OUT_OF_POD_TIME;
@@ -692,8 +755,8 @@ impl EventHandler for MainScene {
 
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymods: KeyMods) {
         match self.state {
-            State::InPod_InDarkness => (),
-            State::InPod_WakeupText => (),
+            State::InPodInDarkness => (),
+            State::InPodWakeupText => (),
             State::GetOutOfPod => (),
             State::Investigate => {
                 if keycode == KeyCode::A || keycode == KeyCode::Left {
