@@ -122,13 +122,16 @@ impl MainScene {
 
         let door_states = HashMap::new();
 
+        let mut text_sfx = Source::new(ctx, "/text.ogg").unwrap();
+        text_sfx.set_pitch(1.4f32);
+
         Self {
             font,
             player,
             finished: false,
             current_text,
             final_text: String::new(),
-            text_sfx: Source::new(ctx, "/text.ogg").unwrap(),
+            text_sfx,
             music,
             pod_image: Image::new(ctx, "/stasis_pod.png").unwrap(),
             pod_flicker_image: Image::new(ctx, "/stasis_pod_empty.png").unwrap(),
