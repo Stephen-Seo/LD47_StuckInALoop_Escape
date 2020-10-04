@@ -490,13 +490,6 @@ impl MainScene {
             Room::WindowRightHall => {
                 graphics::draw(
                     ctx,
-                    &self.earth_image,
-                    DrawParam::new()
-                        .src(Rect::new(0f32, 0f32, 3f32 / 5f32, 3f32 / 5f32))
-                        .dest([800f32 / 5f32, 600f32 / 5f32]),
-                )?;
-                graphics::draw(
-                    ctx,
                     &self.window_image,
                     DrawParam::new().dest([800f32 / 5f32, 600f32 / 5f32]),
                 )?;
