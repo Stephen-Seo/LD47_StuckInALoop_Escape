@@ -50,6 +50,7 @@ impl Puzzle {
         match self.ptype {
             PuzzleID::FarRightHall => {
                 self.tiles.clear();
+
                 self.tiles.push(true);
                 self.tiles.push(false);
                 self.tiles.push(true);
@@ -62,12 +63,28 @@ impl Puzzle {
                 self.tiles.push(false);
                 self.tiles.push(true);
             }
+            PuzzleID::Computer => {
+                self.tiles.clear();
+
+                self.tiles.push(false);
+                self.tiles.push(false);
+                self.tiles.push(false);
+
+                self.tiles.push(true);
+                self.tiles.push(false);
+                self.tiles.push(false);
+
+                self.tiles.push(false);
+                self.tiles.push(false);
+                self.tiles.push(false);
+            }
         }
     }
 
     pub fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
         match self.ptype {
-            PuzzleID::FarRightHall => {}
+            PuzzleID::FarRightHall => (),
+            PuzzleID::Computer => (),
         }
         Ok(())
     }
@@ -83,7 +100,7 @@ impl Puzzle {
             graphics::draw(ctx, &bg_mesh, DrawParam::new())?;
         }
         match self.ptype {
-            PuzzleID::FarRightHall => {
+            PuzzleID::FarRightHall | PuzzleID::Computer => {
                 let rect = Mesh::new_rectangle(
                     ctx,
                     DrawMode::fill(),
@@ -146,7 +163,7 @@ impl Puzzle {
     pub fn handle_click(&mut self, ctx: &mut Context, x: f32, y: f32) {
         self.key_pressed = false;
         match self.ptype {
-            PuzzleID::FarRightHall => {
+            PuzzleID::FarRightHall | PuzzleID::Computer => {
                 if y > 150f32 && y < 250f32 {
                     if x > 250f32 && x < 350f32 {
                         self.handle_puzzle_input(0);
@@ -187,7 +204,7 @@ impl Puzzle {
 
     pub fn handle_key(&mut self, _ctx: &mut Context, keycode: KeyCode) {
         match self.ptype {
-            PuzzleID::FarRightHall => {
+            PuzzleID::FarRightHall | PuzzleID::Computer => {
                 if keycode == KeyCode::A || keycode == KeyCode::Left {
                     if self.key_pos % 3 == 0 {
                         self.key_pos += 2;
@@ -246,6 +263,25 @@ impl Puzzle {
                     self.tiles[idx + 3] = !self.tiles[idx + 3];
                 }
             }
+            PuzzleID::Computer => {
+                self.tiles[idx] = !self.tiles[idx];
+                match idx {
+                    0 | 2 | 6 | 8 => {
+                        self.tiles[4] = !self.tiles[4];
+                    }
+                    1 | 5 => {
+                        self.tiles[2] = !self.tiles[2];
+                    }
+                    3 | 7 => {
+                        self.tiles[6] = !self.tiles[6];
+                    }
+                    4 => {
+                        self.tiles[1] = !self.tiles[1];
+                        self.tiles[7] = !self.tiles[7];
+                    }
+                    _ => unreachable!("There should only be 9 tiles"),
+                }
+            }
         }
     }
 
@@ -254,7 +290,7 @@ impl Puzzle {
             return true;
         }
         match self.ptype {
-            PuzzleID::FarRightHall => {
+            PuzzleID::FarRightHall | PuzzleID::Computer => {
                 let mut solved = true;
                 for tile in &self.tiles {
                     if !tile {

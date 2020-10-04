@@ -25,6 +25,12 @@ const IN_POD_TEXT_WAIT_TIME: f32 = 1f32;
 const GET_OUT_OF_POD_TIME: f32 = 3f32;
 const PLAYER_MOVEMENT_SPEED: f32 = 200f32;
 const DOOR_EXIT_ENTER_TIME: f32 = 1f32;
+const BAD_NEWS_FLICKER_RATE: f32 = 0.08f32;
+const BAD_NEWS_OFFSET: f32 = -2800f32;
+const BAD_NEWS_GROW_RATE: f32 = 100f32;
+const BAD_NEWS_NEW_ROOM_CHANGE: f32 = 150f32;
+const SHIP_DRAW_OFFSET: [f32; 2] = [100f32, 380f32];
+const SHIP_TRAVEL_TIME: f32 = 14f32;
 
 #[derive(Copy, Clone, PartialEq)]
 enum State {
@@ -35,6 +41,7 @@ enum State {
     EnterDoor(Room),
     ExitDoor,
     InPuzzle(PuzzleID),
+    Ending,
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -45,6 +52,8 @@ enum Room {
     WindowRightHall,
     LeftHall,
     FarRightHall,
+    Computer,
+    Final,
 }
 
 enum WalkingState {
@@ -68,6 +77,7 @@ enum DiscoveryState {
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum PuzzleID {
     FarRightHall,
+    Computer,
 }
 
 pub struct MainScene {
@@ -107,6 +117,17 @@ pub struct MainScene {
     puzzle: Option<Puzzle>,
     success_sfx: Source,
     bg_image: Image,
+    end_game: bool,
+    bad_news_image: Image,
+    bad_news_state: usize,
+    bad_news_timer: f32,
+    bad_news_xoffset: f32,
+    bad_news_music: Source,
+    bad_news_started: bool,
+    escape_ship_image: Image,
+    is_dead: bool,
+    ending_music: Source,
+    escape_ship_2_image: Image,
 }
 
 impl MainScene {
@@ -124,6 +145,9 @@ impl MainScene {
 
         let mut text_sfx = Source::new(ctx, "/text.ogg").unwrap();
         text_sfx.set_pitch(1.4f32);
+
+        let mut bad_news_music = Source::new(ctx, "/bad_news.ogg").unwrap();
+        bad_news_music.set_repeat(true);
 
         Self {
             font,
@@ -161,6 +185,17 @@ impl MainScene {
             puzzle: None,
             success_sfx: Source::new(ctx, "/success.ogg").unwrap(),
             bg_image: Image::new(ctx, "/bg.png").unwrap(),
+            end_game: false,
+            bad_news_image: Image::new(ctx, "/bad_news.png").unwrap(),
+            bad_news_state: 0,
+            bad_news_timer: 0f32,
+            bad_news_xoffset: 0f32,
+            bad_news_music,
+            bad_news_started: false,
+            escape_ship_image: Image::new(ctx, "/escape_ship.png").unwrap(),
+            is_dead: false,
+            ending_music: Source::new(ctx, "/music02.ogg").unwrap(),
+            escape_ship_2_image: Image::new(ctx, "/escape_ship2.png").unwrap(),
         }
     }
 
@@ -252,6 +287,9 @@ impl MainScene {
                     self.interactables[0].set_unlocked(true);
                 }
                 self.darkness_yoffset = -250f32;
+                if self.state == State::ExitDoor {
+                    self.player.borrow_mut().x = 150f32 + (96f32 - 64f32) / 2f32;
+                }
             }
             Room::FarRightHall => {
                 self.doors.clear();
@@ -267,6 +305,42 @@ impl MainScene {
                     }
                 }
                 self.darkness_yoffset = -450f32;
+            }
+            Room::Computer => {
+                self.doors.clear();
+                self.interactables.clear();
+                self.doors
+                    .push(Door::new(true, 650f32, 600f32 - 160f32 - 50f32, 0));
+                self.interactables.push(Interactable::new(
+                    InteractableType::Door(0),
+                    780f32,
+                    450f32,
+                ));
+                self.interactables.push(Interactable::new(
+                    InteractableType::Puzzle(PuzzleID::Computer, false),
+                    300f32,
+                    400f32,
+                ));
+                self.interactables[1].set_radius(200f32);
+                if self.puzzle_states.contains_key(&PuzzleID::Computer) {
+                    if let Some(true) = self.puzzle_states.get(&PuzzleID::Computer) {
+                        self.interactables[1].set_puzzle_cleared(true);
+                    }
+                }
+                self.darkness_yoffset = -530f32;
+                if self.state == State::ExitDoor {
+                    self.player.borrow_mut().x = 650f32 + (96f32 - 64f32) / 2f32;
+                }
+            }
+            Room::Final => {
+                self.doors.clear();
+                self.interactables.clear();
+                self.darkness_yoffset = -500f32;
+                self.interactables.push(Interactable::new(
+                    InteractableType::Ship,
+                    383f32 + SHIP_DRAW_OFFSET[0],
+                    141f32 + SHIP_DRAW_OFFSET[1],
+                ));
             }
         }
     }
@@ -293,6 +367,13 @@ impl MainScene {
                 draw_right = true;
             }
             Room::FarRightHall => {
+                draw_left = true;
+                if self.end_game {
+                    draw_right = true;
+                }
+            }
+            Room::Computer => (),
+            Room::Final => {
                 draw_left = true;
             }
         }
@@ -329,17 +410,35 @@ impl MainScene {
                 self.room = Room::LeftHall;
                 self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
                 self.init_room();
+                if self.end_game {
+                    self.bad_news_xoffset += BAD_NEWS_NEW_ROOM_CHANGE;
+                }
             }
             Room::WindowRightHall => {
                 self.room = Room::MainHallFrontOfPod;
                 self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
                 self.init_room();
+                if self.end_game {
+                    self.bad_news_xoffset += BAD_NEWS_NEW_ROOM_CHANGE;
+                }
             }
             Room::LeftHall => (),
             Room::FarRightHall => {
                 self.room = Room::WindowRightHall;
                 self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
                 self.init_room();
+                if self.end_game {
+                    self.bad_news_xoffset += BAD_NEWS_NEW_ROOM_CHANGE;
+                }
+            }
+            Room::Computer => (),
+            Room::Final => {
+                self.room = Room::FarRightHall;
+                self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
+                self.init_room();
+                if self.end_game {
+                    self.bad_news_xoffset += BAD_NEWS_NEW_ROOM_CHANGE;
+                }
             }
         }
     }
@@ -356,18 +455,36 @@ impl MainScene {
                 self.room = Room::WindowRightHall;
                 self.player.borrow_mut().x = 70f32;
                 self.init_room();
+                if self.end_game {
+                    self.bad_news_xoffset -= BAD_NEWS_NEW_ROOM_CHANGE;
+                }
             }
             Room::WindowRightHall => {
                 self.room = Room::FarRightHall;
                 self.player.borrow_mut().x = 70f32;
                 self.init_room();
+                if self.end_game {
+                    self.bad_news_xoffset -= BAD_NEWS_NEW_ROOM_CHANGE;
+                }
             }
             Room::LeftHall => {
                 self.room = Room::MainHallFrontOfPod;
                 self.player.borrow_mut().x = 70f32;
                 self.init_room();
+                if self.end_game {
+                    self.bad_news_xoffset -= BAD_NEWS_NEW_ROOM_CHANGE;
+                }
             }
-            Room::FarRightHall => (),
+            Room::FarRightHall => {
+                if self.end_game {
+                    self.room = Room::Final;
+                    self.player.borrow_mut().x = 70f32;
+                    self.init_room();
+                    self.bad_news_xoffset -= BAD_NEWS_NEW_ROOM_CHANGE;
+                }
+            }
+            Room::Computer => (),
+            Room::Final => (),
         }
     }
 
@@ -391,9 +508,27 @@ impl MainScene {
                 }
                 Room::WindowRightHall => (),
                 Room::LeftHall => {
-                    // TODO
+                    self.state = State::EnterDoor(Room::Computer);
+                    self.timer = DOOR_EXIT_ENTER_TIME;
+                    self.player.borrow_mut().x =
+                        self.doors[door_idx].get_x() + (96f32 - 64f32) / 2f32;
+                    self.player.borrow_mut().set_walking(true);
+                    if self.end_game {
+                        self.bad_news_xoffset += BAD_NEWS_NEW_ROOM_CHANGE;
+                    }
                 }
                 Room::FarRightHall => (),
+                Room::Computer => {
+                    self.state = State::EnterDoor(Room::LeftHall);
+                    self.timer = DOOR_EXIT_ENTER_TIME;
+                    self.player.borrow_mut().x =
+                        self.doors[door_idx].get_x() + (96f32 - 64f32) / 2f32;
+                    self.player.borrow_mut().set_walking(true);
+                    if self.end_game {
+                        self.bad_news_xoffset -= BAD_NEWS_NEW_ROOM_CHANGE;
+                    }
+                }
+                Room::Final => (),
             }
         }
     }
@@ -424,6 +559,16 @@ impl MainScene {
                     Room::WindowRightHall => (),
                     Room::LeftHall => (),
                     Room::FarRightHall => (),
+                    Room::Computer => {
+                        if self.door_states.contains_key(&DoorIDs::LeftHall) {
+                            self.door_states.get_mut(&DoorIDs::LeftHall).unwrap().0 =
+                                self.doors[id].toggle_open();
+                        } else {
+                            self.door_states
+                                .insert(DoorIDs::LeftHall, (self.doors[id].toggle_open(), true));
+                        }
+                    }
+                    Room::Final => (),
                 }
                 self.door_sfx.play()?;
             }
@@ -458,6 +603,8 @@ impl MainScene {
                     }
                 }
                 Room::FarRightHall => (),
+                Room::Computer => (),
+                Room::Final => (),
             },
             InteractableType::Puzzle(id, cleared) => match self.room {
                 Room::StasisPod
@@ -471,7 +618,20 @@ impl MainScene {
                         self.puzzle = Some(Puzzle::new(id, self.font));
                     }
                 }
+                Room::Computer => {
+                    if !cleared {
+                        self.state = State::InPuzzle(id);
+                        self.puzzle = Some(Puzzle::new(id, self.font));
+                    }
+                }
+                Room::Final => (),
             },
+            InteractableType::Ship => {
+                self.state = State::Ending;
+                self.bad_news_music.stop();
+                self.ending_music.play()?;
+                self.timer = 0f32;
+            }
         }
         Ok(())
     }
@@ -496,6 +656,14 @@ impl MainScene {
             }
             Room::LeftHall => {}
             Room::FarRightHall => {}
+            Room::Computer => (),
+            Room::Final => {
+                graphics::draw(
+                    ctx,
+                    &self.escape_ship_image,
+                    DrawParam::new().dest(SHIP_DRAW_OFFSET),
+                )?;
+            }
         }
         for door in &self.doors {
             door.draw(ctx, &self.door_image)?;
@@ -513,7 +681,8 @@ impl MainScene {
             | State::GetOutOfPod
             | State::Investigate
             | State::EnterDoor(_)
-            | State::ExitDoor => unreachable!("Cannot solve puzzle from invalid state"),
+            | State::ExitDoor
+            | State::Ending => unreachable!("Cannot solve puzzle from invalid state"),
             State::InPuzzle(id) => match id {
                 PuzzleID::FarRightHall => {
                     self.puzzle_states.insert(id, true);
@@ -522,16 +691,45 @@ impl MainScene {
                     self.door_states.insert(DoorIDs::LeftHall, (false, true));
                     self.door_states.insert(DoorIDs::LeftOfPod, (false, false));
                 }
+                PuzzleID::Computer => {
+                    self.puzzle_states.insert(id, true);
+                    self.puzzle = None;
+                    self.interactables[1].set_puzzle_cleared(true);
+                    self.end_game = true;
+                }
             },
         }
         self.success_sfx.play()?;
         Ok(())
+    }
+
+    fn draw_bad_news(&mut self, ctx: &mut Context) -> GameResult<()> {
+        graphics::draw(
+            ctx,
+            &self.bad_news_image,
+            DrawParam::new()
+                .src(Rect::new(
+                    0f32,
+                    self.bad_news_state as f32 * 600f32 / 1800f32,
+                    1f32,
+                    1f32 / 3f32,
+                ))
+                .dest([self.bad_news_xoffset + BAD_NEWS_OFFSET, 0f32]),
+        )
     }
 }
 
 impl EventHandler for MainScene {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let dt = delta(ctx).as_secs_f32();
+        if self.is_dead {
+            self.bad_news_timer += dt;
+            if self.bad_news_timer > BAD_NEWS_FLICKER_RATE {
+                self.bad_news_timer -= BAD_NEWS_FLICKER_RATE;
+                self.bad_news_state = (self.bad_news_state + 1) % 3;
+            }
+            return Ok(());
+        }
         match &self.state {
             State::InPodInDarkness => {
                 let mut player = self.player.borrow_mut();
@@ -654,16 +852,61 @@ impl EventHandler for MainScene {
                     self.state = State::Investigate;
                 }
             }
+            State::Ending => {
+                // TODO update ending
+                self.timer += dt;
+                if self.timer >= SHIP_TRAVEL_TIME {
+                    self.timer = SHIP_TRAVEL_TIME;
+                }
+                return Ok(());
+            }
         }
         self.player.borrow_mut().update(ctx)?;
         if self.discovery_state == DiscoveryState::Discovery && self.discovery_music.stopped() {
             self.discovery_state = DiscoveryState::Normal;
             self.music.play()?;
         }
+        if self.end_game {
+            if !self.bad_news_started {
+                self.bad_news_started = true;
+                self.music.stop();
+                self.bad_news_music.play()?;
+            }
+            self.bad_news_xoffset += dt * BAD_NEWS_GROW_RATE;
+            if self.bad_news_xoffset >= 2700f32 {
+                self.is_dead = true;
+            }
+            self.bad_news_timer += dt;
+            if self.bad_news_timer > BAD_NEWS_FLICKER_RATE {
+                self.bad_news_timer -= BAD_NEWS_FLICKER_RATE;
+                self.bad_news_state = (self.bad_news_state + 1) % 3;
+            }
+        }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        if self.state == State::Ending {
+            // TODO draw ending
+            graphics::draw(ctx, &self.earth_image, DrawParam::new())?;
+            let lerp = self.timer / SHIP_TRAVEL_TIME;
+            graphics::draw(
+                ctx,
+                &self.escape_ship_2_image,
+                DrawParam::new()
+                    .dest([
+                        (-5f32 * (1f32 - lerp)) + 500f32 * lerp,
+                        (-5f32 * (1f32 - lerp)) + 200f32 * lerp,
+                    ])
+                    .rotation(-0.2f32 * (1f32 - lerp) + 0.7f32 * lerp)
+                    .scale([
+                        0.7f32 * (1f32 - lerp) + 0.001f32 * lerp,
+                        0.7f32 * (1f32 - lerp) + 0.001f32 * lerp,
+                    ]),
+            )?;
+            return Ok(());
+        }
+
         {
             graphics::draw(ctx, &self.bg_image, DrawParam::new())?;
             let ground_mesh = Mesh::new_rectangle(
@@ -673,6 +916,15 @@ impl EventHandler for MainScene {
                 Color::from_rgb(0x49, 0x49, 0x49),
             )?;
             graphics::draw(ctx, &ground_mesh, DrawParam::new())?;
+        }
+
+        if self.is_dead {
+            graphics::draw(
+                ctx,
+                &self.darkness_image,
+                DrawParam::new().dest([0f32, -80f32]),
+            )?;
+            return Ok(());
         }
 
         match self.state {
@@ -708,6 +960,7 @@ impl EventHandler for MainScene {
                 self.draw_room(ctx)?;
             }
             State::InPuzzle(_) => (),
+            State::Ending => (),
         }
 
         self.player.borrow_mut().draw(ctx)?;
@@ -717,6 +970,10 @@ impl EventHandler for MainScene {
             &self.darkness_image,
             DrawParam::new().dest([0f32, self.darkness_yoffset]),
         )?;
+
+        if self.end_game {
+            self.draw_bad_news(ctx)?;
+        }
 
         match self.state {
             State::InPodInDarkness => (),
@@ -744,6 +1001,8 @@ impl EventHandler for MainScene {
                     Room::WindowRightHall => (),
                     Room::LeftHall => (),
                     Room::FarRightHall => (),
+                    Room::Computer => (),
+                    Room::Final => (),
                 }
 
                 for interactable in &self.interactables {
@@ -786,6 +1045,7 @@ impl EventHandler for MainScene {
                     puzzle.draw(ctx)?;
                 }
             }
+            State::Ending => (),
         }
 
         Ok(())
@@ -850,6 +1110,7 @@ impl EventHandler for MainScene {
                     }
                 }
             }
+            State::Ending => (),
         }
     }
 
@@ -865,6 +1126,7 @@ impl EventHandler for MainScene {
             }
             State::EnterDoor(_) | State::ExitDoor => (),
             State::InPuzzle(_) => {}
+            State::Ending => (),
         }
     }
 
@@ -934,6 +1196,7 @@ impl EventHandler for MainScene {
                     puzzle.handle_key(ctx, keycode);
                 }
             }
+            State::Ending => (),
         }
     }
 
@@ -951,6 +1214,7 @@ impl EventHandler for MainScene {
             }
             State::EnterDoor(_) | State::ExitDoor => (),
             State::InPuzzle(_) => {}
+            State::Ending => (),
         }
     }
 }

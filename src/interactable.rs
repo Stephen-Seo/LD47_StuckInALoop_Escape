@@ -10,6 +10,7 @@ pub enum InteractableType {
     Door(usize),
     LockedDoor(usize, bool),
     Puzzle(PuzzleID, bool),
+    Ship,
 }
 
 pub struct Interactable {
@@ -89,25 +90,47 @@ impl Interactable {
                     DrawParam::new().dest([self.x - 7f32, self.y - 8f32]),
                 )?;
             }
-            InteractableType::Puzzle(_, cleared) => {
-                let color;
-                if cleared {
-                    color = Color::from_rgb(0x3f, 0xf8, 0x4c);
-                } else {
-                    color = Color::from_rgb(0xef, 0, 0);
+            InteractableType::Puzzle(id, cleared) => match id {
+                PuzzleID::FarRightHall => {
+                    let color;
+                    if cleared {
+                        color = Color::from_rgb(0x3f, 0xf8, 0x4c);
+                    } else {
+                        color = Color::from_rgb(0xef, 0, 0);
+                    }
+                    let panel_mesh = Mesh::new_rectangle(
+                        ctx,
+                        DrawMode::fill(),
+                        Rect::new(0f32, 0f32, 40f32, 30f32),
+                        color,
+                    )?;
+                    graphics::draw(
+                        ctx,
+                        &panel_mesh,
+                        DrawParam::new().dest([self.x - 20f32, self.y - 15f32]),
+                    )?;
                 }
-                let panel_mesh = Mesh::new_rectangle(
-                    ctx,
-                    DrawMode::fill(),
-                    Rect::new(0f32, 0f32, 40f32, 30f32),
-                    color,
-                )?;
-                graphics::draw(
-                    ctx,
-                    &panel_mesh,
-                    DrawParam::new().dest([self.x - 20f32, self.y - 15f32]),
-                )?;
-            }
+                PuzzleID::Computer => {
+                    let color;
+                    if cleared {
+                        color = Color::from_rgb(0x3f, 0xf8, 0x4c);
+                    } else {
+                        color = Color::from_rgb(0xef, 0, 0);
+                    }
+                    let panel_mesh = Mesh::new_rectangle(
+                        ctx,
+                        DrawMode::fill(),
+                        Rect::new(0f32, 0f32, 400f32, 300f32),
+                        color,
+                    )?;
+                    graphics::draw(
+                        ctx,
+                        &panel_mesh,
+                        DrawParam::new().dest([self.x - 200f32, self.y - 150f32]),
+                    )?;
+                }
+            },
+            InteractableType::Ship => {}
         }
 
         Ok(())
