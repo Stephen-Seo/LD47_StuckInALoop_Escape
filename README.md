@@ -33,4 +33,4 @@ All audio created with [lmms](https://lmms.io).
 All images created with [gimp](https://gimp.org).
 
 Uses ClearSans font (licensed under the [Apache 2
-license](resources/clearsans-LICENSE-2.0.txt).
+license](resources/clearsans-LICENSE-2.0.txt)).
