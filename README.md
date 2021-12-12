@@ -4,6 +4,11 @@
 
 [itch.io page](https://seodisparate.itch.io/ludumdare-47-entry-escape)
 
+# Important Note
+
+If the game fails to compile, or crashes on start, try building in the
+`maintenance` branch.
+
 # Compiling
 
 [Install rust](https://rust-lang.org)
