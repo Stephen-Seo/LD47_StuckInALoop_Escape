@@ -47,15 +47,15 @@ impl GameState {
 impl Game {
     pub fn new(ctx: &mut Context) -> Game {
         let font = Font::new(ctx, "/ClearSans-Regular.ttf").unwrap();
-        let player = Rc::new(RefCell::new(Player::new(ctx, graphics::WHITE).unwrap()));
-        let game = Game {
+        let player = Rc::new(RefCell::new(
+            Player::new(ctx, graphics::Color::WHITE).unwrap(),
+        ));
+        Game {
             current_scene: GameStartScene::new_boxed(ctx, font, player.clone()),
             state: GameState::GameStart,
             player,
             font,
-        };
-
-        game
+        }
     }
 }
 
@@ -70,7 +70,7 @@ impl EventHandler for Game {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
+        graphics::clear(ctx, graphics::Color::BLACK);
 
         self.current_scene.draw(ctx)?;
 

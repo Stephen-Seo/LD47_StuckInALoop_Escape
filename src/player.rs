@@ -71,7 +71,7 @@ impl Player {
                         ctx,
                         &self.sprite,
                         DrawParam::new()
-                            .src(Rect::new(0f32, 0f32, 0.3333333333333f32, 1f32))
+                            .src(Rect::new(0f32, 0f32, 0.333_333_34f32, 1f32))
                             .dest([self.x, self.y])
                             .rotation(self.rot)
                             .color(self.color)
@@ -83,7 +83,7 @@ impl Player {
                         ctx,
                         &self.sprite,
                         DrawParam::new()
-                            .src(Rect::new(0f32, 0f32, 0.3333333333333f32, 1f32))
+                            .src(Rect::new(0f32, 0f32, 0.333_333_34f32, 1f32))
                             .dest([self.x, self.y])
                             .rotation(self.rot)
                             .color(self.color),
@@ -98,12 +98,7 @@ impl Player {
                             ctx,
                             &self.sprite,
                             DrawParam::new()
-                                .src(Rect::new(
-                                    0.3333333333333f32,
-                                    0f32,
-                                    0.3333333333333f32,
-                                    1f32,
-                                ))
+                                .src(Rect::new(0.333_333_34f32, 0f32, 0.333_333_34f32, 1f32))
                                 .dest([self.x, self.y])
                                 .rotation(self.rot)
                                 .color(self.color)
@@ -116,12 +111,7 @@ impl Player {
                             ctx,
                             &self.sprite,
                             DrawParam::new()
-                                .src(Rect::new(
-                                    0.3333333333333f32,
-                                    0f32,
-                                    0.3333333333333f32,
-                                    1f32,
-                                ))
+                                .src(Rect::new(0.333_333_34f32, 0f32, 0.333_333_34f32, 1f32))
                                 .dest([self.x, self.y])
                                 .rotation(self.rot)
                                 .color(self.color),
@@ -135,12 +125,7 @@ impl Player {
                             ctx,
                             &self.sprite,
                             DrawParam::new()
-                                .src(Rect::new(
-                                    0.6666666666666f32,
-                                    0f32,
-                                    0.3333333333333f32,
-                                    1f32,
-                                ))
+                                .src(Rect::new(0.666_666_7f32, 0f32, 0.333_333_34f32, 1f32))
                                 .dest([self.x, self.y])
                                 .rotation(self.rot)
                                 .color(self.color)
@@ -153,12 +138,7 @@ impl Player {
                             ctx,
                             &self.sprite,
                             DrawParam::new()
-                                .src(Rect::new(
-                                    0.6666666666666f32,
-                                    0f32,
-                                    0.3333333333333f32,
-                                    1f32,
-                                ))
+                                .src(Rect::new(0.666_666_7f32, 0f32, 0.333_333_34f32, 1f32))
                                 .dest([self.x, self.y])
                                 .rotation(self.rot)
                                 .color(self.color),

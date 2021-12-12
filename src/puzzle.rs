@@ -1,4 +1,4 @@
-use ggez::graphics::{self, Color, DrawMode, DrawParam, Font, Mesh, Rect, Scale, Text};
+use ggez::graphics::{self, Color, DrawMode, DrawParam, Font, Mesh, PxScale, Rect, Text};
 use ggez::input::keyboard::KeyCode;
 use ggez::{Context, GameResult};
 
@@ -23,11 +23,11 @@ pub struct Puzzle {
 impl Puzzle {
     pub fn new(ptype: PuzzleID, font: Font) -> Self {
         let mut info_text = Text::new("Make all tiles green");
-        info_text.set_font(font, Scale::uniform(30f32));
+        info_text.set_font(font, PxScale::from(30f32));
         let mut reset_text = Text::new("Reset");
-        reset_text.set_font(font, Scale::uniform(20f32));
+        reset_text.set_font(font, PxScale::from(20f32));
         let mut skip_text = Text::new("Skip");
-        skip_text.set_font(font, Scale::uniform(20f32));
+        skip_text.set_font(font, PxScale::from(20f32));
 
         let mut puzzle = Self {
             ptype,
@@ -105,7 +105,7 @@ impl Puzzle {
                     ctx,
                     DrawMode::fill(),
                     Rect::new(0f32, 0f32, 90f32, 90f32),
-                    graphics::WHITE,
+                    graphics::Color::WHITE,
                 )?;
                 for i in 0..9usize {
                     if self.tiles[i] {
@@ -136,7 +136,7 @@ impl Puzzle {
                     let pointer = Mesh::from_triangles(
                         ctx,
                         &[[0f32, 0f32], [32f32, 0f32], [0f32, 32f32]],
-                        graphics::WHITE,
+                        graphics::Color::WHITE,
                     )?;
                     graphics::draw(
                         ctx,

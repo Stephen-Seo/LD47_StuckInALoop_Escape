@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use ggez::event::EventHandler;
 use ggez::graphics::{
-    self, Color, DrawMode, DrawParam, Font, Mesh, Rect, Scale, Text, TextFragment,
+    self, Color, DrawMode, DrawParam, Font, Mesh, PxScale, Rect, Text, TextFragment,
 };
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
@@ -31,7 +31,7 @@ impl GameStartScene {
         let mut pick_color_text: Text = Text::new(
             TextFragment::new("Pick your color").color(Color::from_rgb(0xff, 0xff, 0xff)),
         );
-        pick_color_text.set_font(font, Scale::uniform(32f32));
+        pick_color_text.set_font(font, PxScale::from(32f32));
         Self {
             font,
             finished: false,
@@ -149,7 +149,7 @@ impl EventHandler for GameStartScene {
         if self.finished {
             self.pick_color_text = Text::new("Loading...");
             self.pick_color_text
-                .set_font(self.font, Scale::uniform(32f32));
+                .set_font(self.font, PxScale::from(32f32));
             let text_width = self.pick_color_text.width(ctx) as f32 / 2f32;
             graphics::draw(
                 ctx,

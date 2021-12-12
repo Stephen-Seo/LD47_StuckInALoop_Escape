@@ -28,7 +28,7 @@ impl Door {
                 ctx,
                 DrawMode::fill(),
                 Rect::new(0f32, 0f32, 96f32, 160f32),
-                graphics::BLACK,
+                graphics::Color::BLACK,
             )?;
             graphics::draw(ctx, &bg_mesh, DrawParam::new().dest([self.x, self.y]))?;
             graphics::draw(

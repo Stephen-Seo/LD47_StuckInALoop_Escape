@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use ggez::audio::{SoundSource, Source};
 use ggez::event::EventHandler;
-use ggez::graphics::{self, Color, DrawMode, DrawParam, Font, Image, Mesh, Rect, Scale, Text};
+use ggez::graphics::{self, Color, DrawMode, DrawParam, Font, Image, Mesh, PxScale, Rect, Text};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::timer::delta;
@@ -135,11 +135,11 @@ impl MainScene {
         let mut music = Source::new(ctx, "/music00.ogg").unwrap();
         music.set_repeat(true);
         let mut current_text = Text::new("");
-        current_text.set_font(font, Scale::uniform(26f32));
+        current_text.set_font(font, PxScale::from(26f32));
         let mut interact_text = Text::new("[E] or Left Click\nto Interact");
-        interact_text.set_font(font, Scale::uniform(20f32));
+        interact_text.set_font(font, PxScale::from(20f32));
         let mut door_text = Text::new("[W] or Right Click\nto enter door");
-        door_text.set_font(font, Scale::uniform(20f32));
+        door_text.set_font(font, PxScale::from(20f32));
 
         let door_states = HashMap::new();
 
@@ -203,18 +203,18 @@ impl MainScene {
         Box::new(Self::new(ctx, font, player))
     }
 
-    fn init_room(&mut self) {
+    fn init_room(&mut self, ctx: &Context) {
         match self.room {
             Room::StasisPod => {
                 self.current_text = Text::new("A and D or Left and Right or Left Click to move");
-                self.current_text.set_font(self.font, Scale::uniform(26f32));
+                self.current_text.set_font(self.font, PxScale::from(26f32));
                 self.darkness_yoffset = -300f32;
                 self.interactables.clear();
                 self.doors.clear();
             }
             Room::LeftOfPod => {
                 self.current_text = Text::new("");
-                self.current_text.set_font(self.font, Scale::uniform(26f32));
+                self.current_text.set_font(self.font, PxScale::from(26f32));
                 self.interactables.clear();
                 self.interactables.push(Interactable::new(
                     InteractableType::Door(0),
@@ -251,7 +251,8 @@ impl MainScene {
                 ));
                 if let Some((_, true)) = self.door_states.get(&DoorIDs::LeftOfPod) {
                     self.interactables[0].set_unlocked(true);
-                } else if !self.door_states.contains_key(&DoorIDs::LeftOfPod) {
+                }
+                if !self.door_states.contains_key(&DoorIDs::LeftOfPod) {
                     self.interactables[0].set_unlocked(true);
                 }
                 if self.state == State::ExitDoor {
@@ -266,8 +267,8 @@ impl MainScene {
                 if !self.saw_earth {
                     self.saw_earth = true;
                     self.discovery_state = DiscoveryState::Discovery;
-                    self.music.stop();
-                    self.discovery_music.play().unwrap();
+                    self.music.stop(ctx);
+                    self.discovery_music.play(ctx).unwrap();
                 }
             }
             Room::LeftHall => {
@@ -382,7 +383,7 @@ impl MainScene {
             let mesh = Mesh::from_triangles(
                 ctx,
                 &[[32f32, 0f32], [32f32, 32f32], [0f32, 16f32]],
-                graphics::WHITE,
+                graphics::Color::WHITE,
             )?;
             graphics::draw(ctx, &mesh, DrawParam::new().dest([32f32, 530f32]))?;
         }
@@ -390,7 +391,7 @@ impl MainScene {
             let mesh = Mesh::from_triangles(
                 ctx,
                 &[[0f32, 0f32], [32f32, 16f32], [0f32, 32f32]],
-                graphics::WHITE,
+                graphics::Color::WHITE,
             )?;
             graphics::draw(ctx, &mesh, DrawParam::new().dest([800f32 - 64f32, 530f32]))?;
         }
@@ -398,18 +399,18 @@ impl MainScene {
         Ok(())
     }
 
-    fn check_exit_left(&mut self) {
+    fn check_exit_left(&mut self, ctx: &Context) {
         match self.room {
             Room::StasisPod => {
                 self.room = Room::LeftOfPod;
                 self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
-                self.init_room();
+                self.init_room(ctx);
             }
             Room::LeftOfPod => (),
             Room::MainHallFrontOfPod => {
                 self.room = Room::LeftHall;
                 self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
-                self.init_room();
+                self.init_room(ctx);
                 if self.end_game {
                     self.bad_news_xoffset += BAD_NEWS_NEW_ROOM_CHANGE;
                 }
@@ -417,7 +418,7 @@ impl MainScene {
             Room::WindowRightHall => {
                 self.room = Room::MainHallFrontOfPod;
                 self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
-                self.init_room();
+                self.init_room(ctx);
                 if self.end_game {
                     self.bad_news_xoffset += BAD_NEWS_NEW_ROOM_CHANGE;
                 }
@@ -426,7 +427,7 @@ impl MainScene {
             Room::FarRightHall => {
                 self.room = Room::WindowRightHall;
                 self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
-                self.init_room();
+                self.init_room(ctx);
                 if self.end_game {
                     self.bad_news_xoffset += BAD_NEWS_NEW_ROOM_CHANGE;
                 }
@@ -435,7 +436,7 @@ impl MainScene {
             Room::Final => {
                 self.room = Room::FarRightHall;
                 self.player.borrow_mut().x = 800f32 - 70f32 - 64f32;
-                self.init_room();
+                self.init_room(ctx);
                 if self.end_game {
                     self.bad_news_xoffset += BAD_NEWS_NEW_ROOM_CHANGE;
                 }
@@ -443,18 +444,18 @@ impl MainScene {
         }
     }
 
-    fn check_exit_right(&mut self) {
+    fn check_exit_right(&mut self, ctx: &Context) {
         match self.room {
             Room::StasisPod => (),
             Room::LeftOfPod => {
                 self.room = Room::StasisPod;
                 self.player.borrow_mut().x = 70f32;
-                self.init_room();
+                self.init_room(ctx);
             }
             Room::MainHallFrontOfPod => {
                 self.room = Room::WindowRightHall;
                 self.player.borrow_mut().x = 70f32;
-                self.init_room();
+                self.init_room(ctx);
                 if self.end_game {
                     self.bad_news_xoffset -= BAD_NEWS_NEW_ROOM_CHANGE;
                 }
@@ -462,7 +463,7 @@ impl MainScene {
             Room::WindowRightHall => {
                 self.room = Room::FarRightHall;
                 self.player.borrow_mut().x = 70f32;
-                self.init_room();
+                self.init_room(ctx);
                 if self.end_game {
                     self.bad_news_xoffset -= BAD_NEWS_NEW_ROOM_CHANGE;
                 }
@@ -470,7 +471,7 @@ impl MainScene {
             Room::LeftHall => {
                 self.room = Room::MainHallFrontOfPod;
                 self.player.borrow_mut().x = 70f32;
-                self.init_room();
+                self.init_room(ctx);
                 if self.end_game {
                     self.bad_news_xoffset -= BAD_NEWS_NEW_ROOM_CHANGE;
                 }
@@ -479,7 +480,7 @@ impl MainScene {
                 if self.end_game {
                     self.room = Room::Final;
                     self.player.borrow_mut().x = 70f32;
-                    self.init_room();
+                    self.init_room(ctx);
                     self.bad_news_xoffset -= BAD_NEWS_NEW_ROOM_CHANGE;
                 }
             }
@@ -533,73 +534,78 @@ impl MainScene {
         }
     }
 
-    fn use_interactable(&mut self, itype: InteractableType) -> GameResult<()> {
+    fn use_interactable(&mut self, itype: InteractableType, ctx: &Context) -> GameResult<()> {
         match itype {
             InteractableType::Door(id) => {
                 match self.room {
                     Room::StasisPod => (),
                     Room::LeftOfPod => {
-                        if self.door_states.contains_key(&DoorIDs::LeftOfPod) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.door_states.entry(DoorIDs::LeftOfPod)
+                        {
+                            e.insert((self.doors[id].toggle_open(), true));
+                        } else {
                             self.door_states.get_mut(&DoorIDs::LeftOfPod).unwrap().0 =
                                 self.doors[id].toggle_open();
-                        } else {
-                            self.door_states
-                                .insert(DoorIDs::LeftOfPod, (self.doors[id].toggle_open(), true));
                         }
                     }
                     Room::MainHallFrontOfPod => {
-                        if self.door_states.contains_key(&DoorIDs::LeftOfPod) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.door_states.entry(DoorIDs::LeftOfPod)
+                        {
+                            e.insert((self.doors[id].toggle_open(), true));
+                        } else {
                             self.door_states.get_mut(&DoorIDs::LeftOfPod).unwrap().0 =
                                 self.doors[id].toggle_open();
-                        } else {
-                            self.door_states
-                                .insert(DoorIDs::LeftOfPod, (self.doors[id].toggle_open(), true));
                         }
                     }
                     Room::WindowRightHall => (),
                     Room::LeftHall => (),
                     Room::FarRightHall => (),
                     Room::Computer => {
-                        if self.door_states.contains_key(&DoorIDs::LeftHall) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.door_states.entry(DoorIDs::LeftHall)
+                        {
+                            e.insert((self.doors[id].toggle_open(), true));
+                        } else {
                             self.door_states.get_mut(&DoorIDs::LeftHall).unwrap().0 =
                                 self.doors[id].toggle_open();
-                        } else {
-                            self.door_states
-                                .insert(DoorIDs::LeftHall, (self.doors[id].toggle_open(), true));
                         }
                     }
                     Room::Final => (),
                 }
-                self.door_sfx.play()?;
+                self.door_sfx.play(ctx)?;
             }
             InteractableType::LockedDoor(id, unlocked) => match self.room {
                 Room::StasisPod | Room::LeftOfPod | Room::WindowRightHall => (),
                 Room::MainHallFrontOfPod => {
                     if unlocked {
-                        if self.door_states.contains_key(&DoorIDs::LeftOfPod) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.door_states.entry(DoorIDs::LeftOfPod)
+                        {
+                            e.insert((self.doors[id].toggle_open(), true));
+                        } else {
                             self.door_states.get_mut(&DoorIDs::LeftOfPod).unwrap().0 =
                                 self.doors[id].toggle_open();
-                        } else {
-                            self.door_states
-                                .insert(DoorIDs::LeftOfPod, (self.doors[id].toggle_open(), true));
                         }
-                        self.door_sfx.play()?;
+                        self.door_sfx.play(ctx)?;
                     } else {
-                        self.error_sfx.play()?;
+                        self.error_sfx.play(ctx)?;
                     }
                 }
                 Room::LeftHall => {
                     if unlocked {
-                        if self.door_states.contains_key(&DoorIDs::LeftHall) {
+                        if let std::collections::hash_map::Entry::Vacant(e) =
+                            self.door_states.entry(DoorIDs::LeftHall)
+                        {
+                            e.insert((self.doors[id].toggle_open(), true));
+                        } else {
                             self.door_states.get_mut(&DoorIDs::LeftHall).unwrap().0 =
                                 self.doors[id].toggle_open();
-                        } else {
-                            self.door_states
-                                .insert(DoorIDs::LeftHall, (self.doors[id].toggle_open(), true));
                         }
-                        self.door_sfx.play()?;
+                        self.door_sfx.play(ctx)?;
                     } else {
-                        self.error_sfx.play()?;
+                        self.error_sfx.play(ctx)?;
                     }
                 }
                 Room::FarRightHall => (),
@@ -628,8 +634,8 @@ impl MainScene {
             },
             InteractableType::Ship => {
                 self.state = State::Ending;
-                self.bad_news_music.stop();
-                self.ending_music.play()?;
+                self.bad_news_music.stop(ctx);
+                self.ending_music.play(ctx)?;
                 self.timer = 0f32;
             }
         }
@@ -674,7 +680,7 @@ impl MainScene {
         Ok(())
     }
 
-    fn handle_solved_puzzle(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn handle_solved_puzzle(&mut self, ctx: &mut Context) -> GameResult<()> {
         match self.state {
             State::InPodInDarkness
             | State::InPodWakeupText
@@ -699,7 +705,7 @@ impl MainScene {
                 }
             },
         }
-        self.success_sfx.play()?;
+        self.success_sfx.play(ctx)?;
         Ok(())
     }
 
@@ -758,7 +764,7 @@ impl EventHandler for MainScene {
                         self.current_text.fragments_mut()[0]
                             .text
                             .push(self.final_text.pop().unwrap());
-                        self.text_sfx.play()?;
+                        self.text_sfx.play(ctx)?;
                         if self.final_text.is_empty() {
                             self.timer = IN_POD_TEXT_WAIT_TIME;
                         }
@@ -780,8 +786,8 @@ impl EventHandler for MainScene {
                     player.rot = (0.78f32 * lerp) + (0f32 * (1f32 - lerp));
                 } else if self.timer <= 0f32 {
                     self.state = State::Investigate;
-                    self.music.play()?;
-                    self.init_room();
+                    self.music.play(ctx)?;
+                    self.init_room(ctx);
                 }
             }
             State::Investigate => match self.walking_state {
@@ -794,7 +800,7 @@ impl EventHandler for MainScene {
                         self.player.borrow_mut().x = 0f32;
                         self.walking_state = WalkingState::Standing;
                         self.player.borrow_mut().set_walking(false);
-                        self.check_exit_left();
+                        self.check_exit_left(ctx);
                     } else {
                         self.player.borrow_mut().set_walking(true);
                         self.player.borrow_mut().set_xflip(true);
@@ -806,7 +812,7 @@ impl EventHandler for MainScene {
                         self.player.borrow_mut().x = 800f32 - 64f32;
                         self.walking_state = WalkingState::Standing;
                         self.player.borrow_mut().set_walking(false);
-                        self.check_exit_right();
+                        self.check_exit_right(ctx);
                     } else {
                         self.player.borrow_mut().set_walking(true);
                         self.player.borrow_mut().set_xflip(false);
@@ -822,7 +828,7 @@ impl EventHandler for MainScene {
                     }
                     self.state = State::ExitDoor;
                     self.timer = DOOR_EXIT_ENTER_TIME;
-                    self.init_room();
+                    self.init_room(ctx);
                     self.player.borrow_mut().color.a = 0f32;
                 } else {
                     self.player.borrow_mut().color.a = self.timer / DOOR_EXIT_ENTER_TIME;
@@ -864,13 +870,13 @@ impl EventHandler for MainScene {
         self.player.borrow_mut().update(ctx)?;
         if self.discovery_state == DiscoveryState::Discovery && self.discovery_music.stopped() {
             self.discovery_state = DiscoveryState::Normal;
-            self.music.play()?;
+            self.music.play(ctx)?;
         }
         if self.end_game {
             if !self.bad_news_started {
                 self.bad_news_started = true;
-                self.music.stop();
-                self.bad_news_music.play()?;
+                self.music.stop(ctx);
+                self.bad_news_music.play(ctx)?;
             }
             self.bad_news_xoffset += dt * BAD_NEWS_GROW_RATE;
             if self.bad_news_xoffset >= 2700f32 {
@@ -993,7 +999,7 @@ impl EventHandler for MainScene {
                             &self.current_text,
                             DrawParam::new()
                                 .dest([100f32, 100f32])
-                                .color(graphics::WHITE),
+                                .color(graphics::Color::WHITE),
                         )?;
                     }
                     Room::LeftOfPod => {}
@@ -1010,7 +1016,7 @@ impl EventHandler for MainScene {
                         self.player.borrow().x + 32f32,
                         self.player.borrow().y + 64f32,
                     ) {
-                        let text_offset = (self.interact_text.width(ctx) / 2) as f32;
+                        let text_offset = (self.interact_text.width(ctx) / 2.0f32).floor();
                         graphics::draw(
                             ctx,
                             &self.interact_text,
@@ -1027,7 +1033,7 @@ impl EventHandler for MainScene {
                         self.player.borrow().y + 64f32,
                     ) && door.get_open()
                     {
-                        let text_offset = (self.door_text.width(ctx) / 2) as f32;
+                        let text_offset = (self.door_text.width(ctx) / 2.0f32).floor();
                         graphics::draw(
                             ctx,
                             &self.door_text,
@@ -1077,7 +1083,7 @@ impl EventHandler for MainScene {
                         }
                     }
                     if let Some(it) = itype {
-                        self.use_interactable(it).unwrap();
+                        self.use_interactable(it, ctx).unwrap();
                     } else if self.player.borrow().x > x {
                         self.walking_state = WalkingState::Left;
                     } else if self.player.borrow().x + 64f32 < x {
@@ -1170,7 +1176,7 @@ impl EventHandler for MainScene {
                         }
                     }
                     if let Some(it) = itype {
-                        self.use_interactable(it).unwrap();
+                        self.use_interactable(it, ctx).unwrap();
                     }
                 } else if keycode == KeyCode::W {
                     let mut door_idx: Option<usize> = None;
@@ -1206,9 +1212,11 @@ impl EventHandler for MainScene {
             State::InPodWakeupText => (),
             State::GetOutOfPod => (),
             State::Investigate => {
-                if keycode == KeyCode::A || keycode == KeyCode::Left {
-                    self.walking_state = WalkingState::Standing;
-                } else if keycode == KeyCode::D || keycode == KeyCode::Right {
+                if keycode == KeyCode::A
+                    || keycode == KeyCode::Left
+                    || keycode == KeyCode::D
+                    || keycode == KeyCode::Right
+                {
                     self.walking_state = WalkingState::Standing;
                 }
             }
